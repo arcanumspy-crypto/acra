@@ -1,8 +1,4 @@
 import { NextResponse } from "next/server"
-import { createAdminClient } from "@/lib/supabase/admin"
-
-import { NextResponse } from "next/server"
-import { createAdminClient } from "@/lib/supabase/admin"
 import { getAllUsers } from "@/lib/db/admin/users"
 
 export async function GET(request: Request) {
