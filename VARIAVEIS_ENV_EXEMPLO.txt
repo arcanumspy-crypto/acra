@@ -1,0 +1,17 @@
+# Copie e cole estas linhas no seu arquivo .env.local
+# Substitua "sua_service_role_key_aqui" pela sua Service Role Key do Supabase
+
+NEXT_PUBLIC_SUPABASE_URL=https://vahqjpblgirjbhglsiqm.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhaHFqcGJsZ2lyamJoZ2xzaXFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4NTI2MzcsImV4cCI6MjA3OTQyODYzN30.hQ-BjXpzNAQYYbfhx87KYU_ICgAVstHQMyymPXBY6Rk
+SUPABASE_SERVICE_ROLE_KEY=sua_service_role_key_aqui
+FISH_AUDIO_API_KEY=7c0f58472b724703abc385164af007b5
+FISH_AUDIO_API_URL=https://api.fish.audio
+
+SCRAPER_API_SECRET=defina_um_token_forte_aqui
+SCRAPER_API_URL=http://localhost:3000/api/facebook-ads/import
+FB_SCRAPER_CRON=*/2 * * * *
+FB_SCRAPER_COUNTRY=BR
+FB_SCRAPER_MAX_ADS=15
+# Exemplo: [{"name":"Fitness","query":"fitness","category":"Fitness"}]
+FB_SCRAPER_NICHES=
+

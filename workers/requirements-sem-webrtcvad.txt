@@ -1,0 +1,23 @@
+# Python Dependencies para Pipeline de Clonagem de Voz Profissional
+# Versão SEM webrtcvad (que requer compilação C++)
+# Instalar com: py -3.12 -m pip install -r requirements-sem-webrtcvad.txt
+
+# Processamento de Áudio
+librosa>=0.10.0,<0.11.0
+soundfile>=0.12.0
+noisereduce>=3.0.0
+pydub>=0.25.1
+
+# Extração de Embeddings de Voz
+# Resemblyzer sem webrtcvad (funciona, mas sem detecção de voz ativa)
+resemblyzer>=0.1.1
+# NOTA: webrtcvad será instalado separadamente se necessário
+
+# Computação Numérica
+numpy>=1.24.0,<2.0.0
+scipy>=1.11.0
+
+# Utilitários
+requests>=2.31.0
+python-dotenv>=1.0.0
+

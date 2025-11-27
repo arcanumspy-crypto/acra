@@ -1,0 +1,194 @@
+import { NextRequest, NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
+
+/**
+ * GET /api/admin/categories
+ * Listar todas as categorias (admin)
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Não autenticado" },
+        { status: 401 }
+      )
+    }
+
+    // Verificar se é admin
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || profile.role !== 'admin') {
+      return NextResponse.json(
+        { error: "Não autorizado" },
+        { status: 403 }
+      )
+    }
+
+    const adminClient = createAdminClient()
+    const { data: categories, error } = await adminClient
+      .from('categories')
+      .select('*')
+      .order('name', { ascending: true })
+
+    if (error) throw error
+
+    return NextResponse.json({ categories: categories || [] })
+  } catch (error: any) {
+    console.error('Error in GET /api/admin/categories:', error)
+    return NextResponse.json(
+      { error: error.message || "Erro ao buscar categorias" },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * POST /api/admin/categories
+ * Criar nova categoria (admin)
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Não autenticado" },
+        { status: 401 }
+      )
+    }
+
+    // Verificar se é admin
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || profile.role !== 'admin') {
+      return NextResponse.json(
+        { error: "Não autorizado" },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    const { name, slug, description, emoji, is_premium } = body
+
+    if (!name || !slug) {
+      return NextResponse.json(
+        { error: "Nome e slug são obrigatórios" },
+        { status: 400 }
+      )
+    }
+
+    const adminClient = createAdminClient()
+    const { data: category, error } = await adminClient
+      .from('categories')
+      .insert({
+        name,
+        slug,
+        description: description || null,
+        emoji: emoji || null,
+        is_premium: is_premium || false,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return NextResponse.json({ category }, { status: 201 })
+  } catch (error: any) {
+    console.error('Error in POST /api/admin/categories:', error)
+    return NextResponse.json(
+      { error: error.message || "Erro ao criar categoria" },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * PUT /api/admin/categories/[id]
+ * Atualizar categoria (admin)
+ */
+export async function PUT(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Não autenticado" },
+        { status: 401 }
+      )
+    }
+
+    // Verificar se é admin
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || profile.role !== 'admin') {
+      return NextResponse.json(
+        { error: "Não autorizado" },
+        { status: 403 }
+      )
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "ID da categoria é obrigatório" },
+        { status: 400 }
+      )
+    }
+
+    const body = await request.json()
+    const { name, slug, description, emoji, is_premium } = body
+
+    const adminClient = createAdminClient()
+    const { data: category, error } = await adminClient
+      .from('categories')
+      .update({
+        ...(name && { name }),
+        ...(slug && { slug }),
+        ...(description !== undefined && { description }),
+        ...(emoji !== undefined && { emoji }),
+        ...(is_premium !== undefined && { is_premium }),
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return NextResponse.json({ category })
+  } catch (error: any) {
+    console.error('Error in PUT /api/admin/categories:', error)
+    return NextResponse.json(
+      { error: error.message || "Erro ao atualizar categoria" },
+      { status: 500 }
+    )
+  }
+}
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,21 @@
+# Versão Compatível com Python 3.14
+# Algumas bibliotecas podem não funcionar - use Python 3.11 ou 3.12 se possível
+
+# Processamento de Áudio (versões mais recentes)
+librosa>=0.10.0
+soundfile>=0.12.0
+noisereduce>=3.0.0
+pydub>=0.25.1
+
+# Computação Numérica
+numpy>=1.26.0
+scipy>=1.11.0
+
+# Utilitários
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# Resemblyzer - Pode não funcionar no Python 3.14
+# Tente instalar manualmente ou use alternativa
+# resemblyzer>=0.1.1
+
