@@ -18,6 +18,7 @@ import {
 import { Moon, Sun, User, CreditCard, LogOut, Shield } from "lucide-react"
 import { useTheme } from "next-themes"
 import { supabase } from "@/lib/supabase/client"
+import type { AuthChangeEvent } from "@supabase/supabase-js"
 
 export default function PublicLayout({
   children,
@@ -47,7 +48,7 @@ export default function PublicLayout({
     initAuth()
     
     // Escutar mudanças de autenticação para atualizar o estado
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session) => {
       if (isMounted) {
         // Forçar re-inicialização quando houver mudança de estado
         if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
