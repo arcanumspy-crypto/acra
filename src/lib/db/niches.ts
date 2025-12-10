@@ -111,7 +111,7 @@ export async function adminGetAllNiches(): Promise<NicheWithCategory[]> {
  */
 export async function adminCreateNiche(niche: NicheInsert): Promise<Niche | null> {
   try {
-    const insertData: Omit<Niche, 'id' | 'created_at'> & { id?: string; created_at?: string } = {
+    const insertData: NicheInsert = {
       name: niche.name,
       slug: niche.slug,
       description: niche.description ?? null,
@@ -123,7 +123,7 @@ export async function adminCreateNiche(niche: NicheInsert): Promise<Niche | null
 
     const { data, error } = await supabase
       .from('niches')
-      .insert([insertData])
+      .insert([insertData] as any)
       .select()
       .single()
 

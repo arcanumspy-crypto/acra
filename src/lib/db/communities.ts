@@ -267,7 +267,7 @@ export async function adminCreateCommunity(community: CommunityInsert): Promise<
     const { createAdminClient } = await import('@/lib/supabase/admin')
     const adminClient = createAdminClient()
 
-    const insertData: Omit<Community, 'id' | 'created_at'> & { id?: string; created_at?: string } = {
+    const insertData: CommunityInsert = {
       name: community.name,
       description: community.description ?? null,
       is_paid: community.is_paid ?? false,
@@ -279,7 +279,7 @@ export async function adminCreateCommunity(community: CommunityInsert): Promise<
 
     const { data, error } = await adminClient
       .from('communities')
-      .insert([insertData])
+      .insert([insertData] as any)
       .select()
       .single()
 
