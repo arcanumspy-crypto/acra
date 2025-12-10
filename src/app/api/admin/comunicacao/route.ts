@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendEmail } from '@/lib/email/resend'
 import { getAdminNewsletterEmail, getAdminPaymentOverdueEmail } from '@/lib/email/admin-templates'
+import { ensureArray } from '@/lib/supabase-utils'
+import type { ProfileBasic, UserBasic } from '@/types/schemas'
 
 export async function POST(request: NextRequest) {
   try {
@@ -83,23 +85,56 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Buscar usuários (reutilizar adminClient já criado acima)
-    const { data: users, error: usersError } = await adminClient
+    // Buscar perfis (sem email, pois email está em auth.users)
+    const { data: profilesRaw, error: profilesError } = await adminClient
       .from('profiles')
-      .select('id, name, email')
+      .select('id, name')
       .in('id', userIds)
 
-    if (usersError || !users || users.length === 0) {
+    // Tratar erro do Supabase
+    if (profilesError) {
+      console.error('Supabase profiles error', profilesError)
       return NextResponse.json(
-        { error: "Erro ao buscar usuários ou nenhum usuário encontrado" },
+        { error: "Erro ao buscar usuários: " + profilesError.message },
+        { status: 500 }
+      )
+    }
+
+    // Garantir array e tipar
+    const profiles = ensureArray<ProfileBasic>(profilesRaw)
+
+    if (profiles.length === 0) {
+      return NextResponse.json(
+        { error: "Nenhum usuário encontrado" },
         { status: 400 }
       )
     }
 
-    // Filtrar usuários com email válido
-    const usersWithEmail = users.filter(u => u.email && u.email.trim() !== '')
+    // Buscar emails de auth.users para cada perfil
+    const users: UserBasic[] = await Promise.all(
+      profiles.map(async (profile) => {
+        try {
+          const { data: authUser } = await adminClient.auth.admin.getUserById(profile.id)
+          return {
+            id: profile.id,
+            name: profile.name || null,
+            email: authUser?.user?.email || null,
+          } as UserBasic
+        } catch (error) {
+          console.warn(`Erro ao buscar email para usuário ${profile.id}:`, error)
+          return {
+            id: profile.id,
+            name: profile.name || null,
+            email: null,
+          } as UserBasic
+        }
+      })
+    )
 
-    if (usersWithEmail.length === 0) {
+    // Filtrar usuários com email válido
+    const usersWithValidEmail = users.filter(u => u.email && u.email.trim() !== '')
+
+    if (usersWithValidEmail.length === 0) {
       return NextResponse.json(
         { error: "Nenhum usuário com email válido encontrado" },
         { status: 400 }
@@ -113,7 +148,7 @@ export async function POST(request: NextRequest) {
       errors: [] as string[]
     }
 
-    for (const user of usersWithEmail) {
+    for (const user of usersWithValidEmail) {
       try {
         let html = ''
         let emailSubject = subject || 'ArcanumSpy'
@@ -173,7 +208,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       results: {
-        total: usersWithEmail.length,
+        total: usersWithValidEmail.length,
         sent: results.sent,
         failed: results.failed,
         errors: results.errors

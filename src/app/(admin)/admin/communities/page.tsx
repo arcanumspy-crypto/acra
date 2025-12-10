@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -32,12 +32,7 @@ export default function AdminCommunitiesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const { toast } = useToast()
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    loadCommunities()
-  }, [])
-
-  const loadCommunities = async () => {
+  const loadCommunities = useCallback(async () => {
     try {
       setLoading(true)
       const { data: { session } } = await supabase.auth.getSession()
@@ -70,7 +65,11 @@ export default function AdminCommunitiesPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
+
+  useEffect(() => {
+    loadCommunities()
+  }, [loadCommunities])
 
   const handleSaveCommunity = async (data: any) => {
     

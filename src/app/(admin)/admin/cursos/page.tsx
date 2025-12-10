@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,11 +24,7 @@ export default function AdminCursosPage() {
   const [cursoToDelete, setCursoToDelete] = useState<Curso | null>(null)
   const { toast } = useToast()
 
-  useEffect(() => {
-    loadCursos()
-  }, [])
-
-  const loadCursos = async () => {
+  const loadCursos = useCallback(async () => {
     try {
       setLoading(true)
       const { data: { session } } = await supabase.auth.getSession()
@@ -61,7 +57,11 @@ export default function AdminCursosPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
+
+  useEffect(() => {
+    loadCursos()
+  }, [loadCursos])
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()

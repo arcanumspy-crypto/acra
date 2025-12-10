@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -47,11 +47,7 @@ export default function AdminComunicacaoPage() {
   
   const { toast } = useToast()
 
-  useEffect(() => {
-    loadUsers()
-  }, [])
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -87,7 +83,11 @@ export default function AdminComunicacaoPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
+
+  useEffect(() => {
+    loadUsers()
+  }, [loadUsers])
 
   const handleSelectAll = () => {
     if (selectedUsers.length === users.filter(u => u.email).length) {

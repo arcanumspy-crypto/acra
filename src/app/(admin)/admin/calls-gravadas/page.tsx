@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,11 +31,7 @@ export default function AdminCallsGravadasPage() {
   const [callToDelete, setCallToDelete] = useState<CallGravada | null>(null)
   const { toast } = useToast()
 
-  useEffect(() => {
-    loadCalls()
-  }, [])
-
-  const loadCalls = async () => {
+  const loadCalls = useCallback(async () => {
     try {
       setLoading(true)
       const { data: { session } } = await supabase.auth.getSession()
@@ -68,7 +64,11 @@ export default function AdminCallsGravadasPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
+
+  useEffect(() => {
+    loadCalls()
+  }, [loadCalls])
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -753,9 +754,11 @@ function OfferForm({
         <div className="space-y-3">
           {imagePreview ? (
             <div className="relative">
-              <img
+              <Image
                 src={imagePreview}
                 alt="Preview"
+                width={800}
+                height={192}
                 className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
               />
               <Button

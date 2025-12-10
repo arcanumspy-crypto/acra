@@ -62,28 +62,20 @@ const nextConfig = {
         config.externals = [config.externals, 'sharp']
       }
     }
+
+    // Corrigir problema com vendor chunks do Supabase
+    if (isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+      }
+    }
     
-    // Otimizações para produção
+    // Otimizações para produção - simplificado para evitar problemas com vendor chunks
     if (!dev) {
       config.optimization = {
         ...config.optimization,
         moduleIds: 'deterministic',
         runtimeChunk: 'single',
-        splitChunks: {
-          chunks: 'all',
-          cacheGroups: {
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
-              priority: 10,
-            },
-            common: {
-              minChunks: 2,
-              priority: 5,
-              reuseExistingChunk: true,
-            },
-          },
-        },
       }
     }
 

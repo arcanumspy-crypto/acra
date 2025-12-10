@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
+import { useDataLoader } from "@/hooks/useDataLoader"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -18,32 +19,24 @@ import {
 
 export default function HistoricoCopyPage() {
   const { toast } = useToast()
-  const [copies, setCopies] = useState<CopyGeneration[]>([])
-  const [loading, setLoading] = useState(true)
   const [selectedCopy, setSelectedCopy] = useState<CopyGeneration | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    loadCopies()
-  }, [])
-
-  const loadCopies = async () => {
-    setLoading(true)
-    try {
-      const data = await getCopyGenerations(100)
-      setCopies(data)
-    } catch (error) {
+  const { data: copiesData, loading, reload: reloadCopies } = useDataLoader<CopyGeneration[]>({
+    fetcher: async () => {
+      return await getCopyGenerations(100)
+    },
+    onError: (error) => {
       console.error("Erro ao carregar copies:", error)
       toast({
         title: "Erro",
         description: "Não foi possível carregar o histórico",
         variant: "destructive",
       })
-    } finally {
-      setLoading(false)
-    }
-  }
+    },
+  })
+
+  const copies = copiesData || []
 
   const handleDelete = async (id: string) => {
     if (!confirm("Tem certeza que deseja excluir esta copy?")) {
@@ -53,7 +46,7 @@ export default function HistoricoCopyPage() {
     try {
       const success = await deleteCopyGeneration(id)
       if (success) {
-        setCopies(copies.filter((c) => c.id !== id))
+        await reloadCopies() // Recarregar lista após deletar
         toast({
           title: "Excluído",
           description: "Copy removida do histórico",

@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Image, Upload, Loader2 } from "lucide-react"
+import { Image as ImageIcon, Upload, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -102,7 +103,7 @@ export default function CriadorCriativoPage() {
       <div className="space-y-2">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-[#ff5a1f] rounded-lg">
-            <Image className="h-6 w-6 text-white" />
+            <ImageIcon className="h-6 w-6 text-white" />
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-white break-words">Criador de Criativo</h1>
@@ -198,7 +199,7 @@ export default function CriadorCriativoPage() {
               <div className="space-y-4">
                 <div className="aspect-video bg-[#0a0a0a] border-2 border-[#2a2a2a] rounded-lg flex items-center justify-center">
                   {resultado.url ? (
-                    <img src={resultado.url} alt="Criativo gerado" className="max-w-full max-h-full" />
+                    <Image src={resultado.url} alt="Criativo gerado" width={800} height={450} className="max-w-full max-h-full" />
                   ) : (
                     <div className="text-center">
                       <Loader2 className="h-12 w-12 text-[#ff5a1f] animate-spin mx-auto mb-4" />

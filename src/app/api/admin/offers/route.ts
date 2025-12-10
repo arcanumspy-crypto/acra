@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { ensureArray } from '@/lib/supabase-utils'
+import type { OfferBasic } from '@/types/schemas'
 
 export async function GET(request: NextRequest) {
   try {
@@ -63,17 +65,25 @@ export async function GET(request: NextRequest) {
       const startTime = Date.now()
       
       // Buscar views e contar por oferta
-      const { data: viewsData } = await adminClient
-        .from('offer_views')
-        .select('offer_id')
-        .catch(() => ({ data: [] }))
+      let viewsData: any[] | null = null
+      try {
+        const result = await adminClient
+          .from('offer_views')
+          .select('offer_id')
+        viewsData = result.data || null
+      } catch (error) {
+        console.warn('Erro ao buscar views:', error)
+        viewsData = null
+      }
       
       const viewCounts: Record<string, number> = {}
-      viewsData?.forEach((v: any) => {
-        if (v.offer_id) {
-          viewCounts[v.offer_id] = (viewCounts[v.offer_id] || 0) + 1
-        }
-      })
+      if (viewsData) {
+        viewsData.forEach((v: any) => {
+          if (v.offer_id) {
+            viewCounts[v.offer_id] = (viewCounts[v.offer_id] || 0) + 1
+          }
+        })
+      }
       
       // Ordenar por views
       const sortedOfferIds = Object.entries(viewCounts)
@@ -106,7 +116,10 @@ export async function GET(request: NextRequest) {
       
       if (offersResult.error) throw offersResult.error
       
-      const offers = (offersResult.data || []).map((offer: any) => ({
+      // Forçar tipagem correta e evitar NEVER[]
+      const rawOffers = ensureArray<any>(offersResult.data)
+      
+      const offers = rawOffers.map((offer) => ({
         ...offer,
         views_count: viewCounts[offer.id] || 0,
       }))
@@ -485,6 +498,15 @@ export async function POST(request: Request) {
     }
 
     // Tentar buscar com relacionamentos, se falhar retornar sem
+    if (!offerInsert) {
+      return NextResponse.json({ offer: offerInsert }, { status: 201 })
+    }
+
+    const offerInsertTyped = offerInsert as OfferBasic
+    if (!offerInsertTyped.id) {
+      return NextResponse.json({ offer: offerInsert }, { status: 201 })
+    }
+    
     let offer = offerInsert
     try {
       const { data: offerWithRelations, error: relationError } = await adminClient
@@ -494,7 +516,7 @@ export async function POST(request: Request) {
           category:categories(id, name, slug, emoji),
           niche:niches(id, name, slug)
         `)
-        .eq('id', offerInsert.id)
+        .eq('id', offerInsertTyped.id)
         .single()
 
       // Verificar se o erro é relacionado ao relacionamento com niches
@@ -518,7 +540,7 @@ export async function POST(request: Request) {
             *,
             category:categories(id, name, slug, emoji)
           `)
-          .eq('id', offerInsert.id)
+          .eq('id', offerInsertTyped.id)
           .single()
         
         if (!categoryError && offerWithCategory) {

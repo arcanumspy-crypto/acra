@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { requireAdmin } from "@/lib/api-helpers/auth"
+import { ensureArray, ensureSingle } from "@/lib/supabase-utils"
+import type { PlanRow, PlanUpdate } from "@/types/api"
 
 export async function GET(request: Request) {
   try {
+    // Verificar autenticação e admin
+    const authResult = await requireAdmin(request)
+    if (authResult instanceof NextResponse) {
+      return authResult
+    }
+
     const adminClient = createAdminClient()
     
-    const { data: plans, error } = await adminClient
+    const { data: plansRaw, error } = await adminClient
       .from('plans')
       .select('*')
       .order('price_monthly_cents', { ascending: true })
@@ -17,10 +26,14 @@ export async function GET(request: Request) {
       )
     }
 
-    return NextResponse.json({ plans: plans || [] })
-  } catch (error: any) {
+    // Garantir array tipado
+    const plans = ensureArray<PlanRow>(plansRaw)
+
+    return NextResponse.json({ plans })
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Erro ao processar requisição"
     return NextResponse.json(
-      { error: error.message || "Erro ao processar requisição" },
+      { error: errorMessage },
       { status: 500 }
     )
   }
@@ -28,20 +41,29 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
+    // Verificar autenticação e admin
+    const authResult = await requireAdmin(request)
+    if (authResult instanceof NextResponse) {
+      return authResult
+    }
+
     const adminClient = createAdminClient()
     const body = await request.json()
     const { id, ...updates } = body
 
-    if (!id) {
+    if (!id || typeof id !== 'string') {
       return NextResponse.json(
         { error: "ID do plano é obrigatório" },
         { status: 400 }
       )
     }
 
-    const { data, error } = await adminClient
+    // Tipar updates corretamente e usar type assertion para Supabase
+    const typedUpdates: Partial<PlanUpdate> = updates
+
+    const { data: planRaw, error } = await (adminClient as any)
       .from('plans')
-      .update(updates)
+      .update(typedUpdates as any)
       .eq('id', id)
       .select()
       .single()
@@ -53,10 +75,20 @@ export async function PATCH(request: Request) {
       )
     }
 
-    return NextResponse.json({ plan: data })
-  } catch (error: any) {
+    // Garantir tipo e verificar se existe
+    const plan = ensureSingle<PlanRow>(planRaw)
+    if (!plan) {
+      return NextResponse.json(
+        { error: "Plano não encontrado" },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({ plan })
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Erro ao processar requisição"
     return NextResponse.json(
-      { error: error.message || "Erro ao processar requisição" },
+      { error: errorMessage },
       { status: 500 }
     )
   }

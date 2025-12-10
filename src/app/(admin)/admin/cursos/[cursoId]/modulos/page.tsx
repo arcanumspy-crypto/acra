@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -30,12 +30,7 @@ export default function AdminModulosPage() {
   const [moduloToDelete, setModuloToDelete] = useState<Modulo | null>(null)
   const { toast } = useToast()
 
-  useEffect(() => {
-    loadCurso()
-    loadModulos()
-  }, [cursoId])
-
-  const loadCurso = async () => {
+  const loadCurso = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
@@ -65,9 +60,9 @@ export default function AdminModulosPage() {
       })
       router.push('/admin/cursos')
     }
-  }
+  }, [cursoId, toast, router])
 
-  const loadModulos = async () => {
+  const loadModulos = useCallback(async () => {
     try {
       setLoading(true)
       const { data: { session } } = await supabase.auth.getSession()
@@ -100,7 +95,12 @@ export default function AdminModulosPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [cursoId, toast])
+
+  useEffect(() => {
+    loadCurso()
+    loadModulos()
+  }, [loadCurso, loadModulos])
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()

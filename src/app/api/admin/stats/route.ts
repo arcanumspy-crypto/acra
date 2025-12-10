@@ -19,12 +19,13 @@ export async function GET(request: NextRequest) {
 
       if (!authError && user) {
         // Verificar se é admin
-        const { data: profile } = await supabase
+        const { data: profileRaw } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', user.id)
           .single()
 
+        const profile = profileRaw as { role?: string } | null
         isAdmin = profile?.role === 'admin'
       } else {
         // Se não conseguir autenticar via cookies, tentar via header
@@ -49,12 +50,13 @@ export async function GET(request: NextRequest) {
             if (tokenUser) {
               // Usar adminClient para verificar perfil (bypassa RLS)
               const adminClient = createAdminClient()
-              const { data: profile } = await adminClient
+              const { data: profileRaw } = await adminClient
                 .from('profiles')
                 .select('role')
                 .eq('id', tokenUser.id)
                 .single()
 
+              const profile = profileRaw as { role?: string } | null
               isAdmin = profile?.role === 'admin'
             }
           } catch (tokenError) {
@@ -95,9 +97,7 @@ export async function GET(request: NextRequest) {
       newUsersThisMonthResult,
       totalOffersResult,
       activeOffersResult,
-      totalViewsResult,
-      creditsLoadedResult,
-      creditsConsumedResult
+      totalViewsResult
     ] = await Promise.all([
       // Total de usuários
       adminClient
@@ -136,32 +136,8 @@ export async function GET(request: NextRequest) {
       // Total de visualizações
       adminClient
         .from('offer_views')
-        .select('*', { count: 'exact', head: true }),
-      
-      // Créditos carregados (transações de tipo 'credit' e categoria 'purchase')
-      adminClient
-        .from('credit_transactions')
-        .select('amount')
-        .eq('type', 'credit')
-        .eq('category', 'purchase'),
-      
-      // Créditos consumidos (transações de tipo 'debit')
-      adminClient
-        .from('credit_transactions')
-        .select('amount')
-        .eq('type', 'debit')
+        .select('*', { count: 'exact', head: true })
     ])
-
-    // Calcular totais de créditos
-    const totalCreditsLoaded = creditsLoadedResult.data?.reduce(
-      (sum, t) => sum + (t.amount || 0), 
-      0
-    ) || 0
-
-    const totalCreditsConsumed = creditsConsumedResult.data?.reduce(
-      (sum, t) => sum + (t.amount || 0), 
-      0
-    ) || 0
 
     const stats: AdminStats = {
       totalUsers: totalUsersResult.count || 0,
@@ -170,9 +146,7 @@ export async function GET(request: NextRequest) {
       newUsersThisMonth: newUsersThisMonthResult.count || 0,
       totalOffers: totalOffersResult.count || 0,
       activeOffers: activeOffersResult.count || 0,
-      totalViews: totalViewsResult.count || 0,
-      totalCreditsLoaded,
-      totalCreditsConsumed
+      totalViews: totalViewsResult.count || 0
     }
 
     return NextResponse.json({

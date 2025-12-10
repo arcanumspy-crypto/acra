@@ -8,8 +8,6 @@ export interface AdminStats {
   totalOffers: number
   activeOffers: number
   totalViews: number
-  totalCreditsLoaded: number // Total de créditos carregados
-  totalCreditsConsumed: number // Total de créditos consumidos
 }
 
 /**
@@ -48,8 +46,6 @@ export async function getAdminStats(): Promise<AdminStats> {
       totalOffers: 0,
       activeOffers: 0,
       totalViews: 0,
-      totalCreditsLoaded: 0,
-      totalCreditsConsumed: 0,
     }
   } catch (error: any) {
     console.error('❌ [Admin Stats] Erro ao buscar estatísticas:', error)
@@ -61,8 +57,6 @@ export async function getAdminStats(): Promise<AdminStats> {
       totalOffers: 0,
       activeOffers: 0,
       totalViews: 0,
-      totalCreditsLoaded: 0,
-      totalCreditsConsumed: 0,
     }
   }
 }

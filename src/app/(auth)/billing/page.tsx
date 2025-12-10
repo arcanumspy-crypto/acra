@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useCallback } from "react"
+import { useDataLoader } from "@/hooks/useDataLoader"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -30,65 +31,37 @@ interface CurrentSubscription {
 export default function BillingPage() {
   const { profile, user } = useAuthStore()
   const { locale, currency } = useLocale()
-  const [plans, setPlans] = useState<Plan[]>([])
-  const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null)
-  const [payments, setPayments] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
   const [changingPlan, setChangingPlan] = useState<string | null>(null)
   const { toast } = useToast()
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      await Promise.all([
-        loadPlans(),
-        loadCurrentSubscription(),
-        loadPayments(),
-      ])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadPlans = async () => {
-    try {
+  // Carregar planos usando hook
+  const { data: plansData, loading: plansLoading } = useDataLoader<{ plans: Plan[] }>({
+    fetcher: async () => {
       const response = await fetch('/api/plans', {
         credentials: 'include',
       })
-      if (response.ok) {
-        const data = await response.json()
-        setPlans(data.plans || [])
-      }
-    } catch (error) {
-      console.error('Error loading plans:', error)
-    }
-  }
+      if (!response.ok) throw new Error('Erro ao carregar planos')
+      return response.json()
+    },
+  })
 
-  const loadCurrentSubscription = async () => {
-    try {
+  // Carregar subscription usando hook
+  const { data: subscriptionData, loading: subscriptionLoading, reload: reloadSubscription } = useDataLoader<{ subscription: CurrentSubscription | null }>({
+    fetcher: async () => {
       const response = await fetch('/api/subscription', {
         credentials: 'include',
       })
-      if (response.ok) {
-        const data = await response.json()
-        setCurrentSubscription(data.subscription || null)
-      }
-    } catch (error) {
-      console.error('Error loading subscription:', error)
-    }
-  }
+      if (!response.ok) throw new Error('Erro ao carregar subscription')
+      return response.json()
+    },
+  })
 
-  const loadPayments = async () => {
-    try {
+  // Carregar payments usando hook
+  const { data: paymentsData, loading: paymentsLoading, reload: reloadPayments } = useDataLoader<{ history: any[] }>({
+    fetcher: async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        setPayments([])
-        return
+        return { history: [] }
       }
 
       const response = await fetch('/api/billing/history', {
@@ -98,18 +71,19 @@ export default function BillingPage() {
         },
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        setPayments(data.history || [])
-      } else {
-        console.error('Error loading payment history:', response.statusText)
-        setPayments([])
+      if (!response.ok) {
+        return { history: [] }
       }
-    } catch (error) {
-      console.error('Error loading payments:', error)
-      setPayments([])
-    }
-  }
+
+      return response.json()
+    },
+  })
+
+  // Estados derivados dos hooks
+  const plans: Plan[] = plansData?.plans || []
+  const currentSubscription: CurrentSubscription | null = subscriptionData?.subscription || null
+  const payments: any[] = paymentsData?.history || []
+  const loading = plansLoading || subscriptionLoading || paymentsLoading
 
   const handleChangePlan = async (planId: string) => {
     if (!planId) return
@@ -135,8 +109,8 @@ export default function BillingPage() {
         description: "Seu plano foi alterado com sucesso",
       })
 
-      await loadCurrentSubscription()
-      await loadPayments()
+      await reloadSubscription()
+      await reloadPayments()
     } catch (error: any) {
       toast({
         title: "Erro",

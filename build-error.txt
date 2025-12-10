@@ -1,0 +1,59 @@
+﻿
+> arcanumspy@1.0.0 build
+> next build
+
+  Γû▓ Next.js 14.2.33
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+node.exe : Failed to compile.
+No linha:1 caractere:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Failed to compile.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+./src/app/(auth)/credits/page.tsx
+Error: 
+  [31mx[0m Expected ',', got 'const'
+     ,-[[36;1;4mC:\Users\PRECISION\Downloads\PASTA AGOSTIO-DEZEMBRO\ej-swipefile\src\app\(auth)\credits\page.tsx[0m:170:1]
+ [2m170[0m |     }
+ [2m171[0m |   }
+ [2m172[0m | 
+ [2m173[0m |   const loadTransactions = async () => {
+     : [31;1m  ^^^^^[0m
+ [2m174[0m |     try {
+ [2m175[0m |       setLoadingTransactions(true)
+ [2m176[0m |       const { data: { session } } = await supabase.auth.getSession()
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/(auth)/credits/page.tsx
+
+./src/app/api/admin/stats/route.ts
+Error: 
+  [31mx[0m the name `ensureArray` is defined multiple times
+   ,-[[36;1;4mC:\Users\PRECISION\Downloads\PASTA AGOSTIO-DEZEMBRO\ej-swipefile\src\app\api\admin\stats\route.ts[0m:2:1]
+ [2m2[0m | import { createClient } from "@/lib/supabase/server"
+ [2m3[0m | import { createAdminClient } from "@/lib/supabase/admin"
+ [2m4[0m | import { AdminStats } from "@/lib/db/admin/stats"
+ [2m5[0m | import { ensureArray } from "@/lib/supabase-utils"
+   : [31;1m         ^^^^^|^^^^^[0m
+   :               [31;1m`-- [31;1mprevious definition of `ensureArray` here[0m[0m
+ [2m6[0m | import { ensureArray } from "@/lib/supabase-utils"
+   : [33;1m         ^^^^^|^^^^^[0m
+   :               [33;1m`-- [33;1m`ensureArray` redefined here[0m[0m
+ [2m7[0m | 
+ [2m8[0m | /**
+ [2m9[0m |  * GET /api/admin/stats
+   `----
+
+Import trace for requested module:
+./src/app/api/admin/stats/route.ts
+
+
+> Build failed because of webpack errors

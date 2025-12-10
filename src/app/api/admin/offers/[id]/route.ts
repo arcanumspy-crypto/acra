@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { Database } from "@/types/database"
 
 export async function PUT(
   request: Request,
@@ -118,7 +119,8 @@ export async function PUT(
 
     // adminClient já foi criado acima
 
-    const updates: any = {}
+    type OfferUpdate = Database['public']['Tables']['offers']['Update']
+    const updates: Partial<OfferUpdate> & Record<string, any> = {}
     if (title !== undefined) updates.title = title
     if (short_description !== undefined) updates.short_description = short_description
     if (category_id !== undefined) updates.category_id = category_id
@@ -178,7 +180,7 @@ export async function PUT(
       totalFields: Object.keys(updates).length
     })
 
-    const { data: offer, error } = await adminClient
+    const { data: offer, error } = await (adminClient as any)
       .from('offers')
       .update(updates)
       .eq('id', id)
@@ -215,7 +217,7 @@ export async function PUT(
         if (is_active !== undefined) safeUpdates.is_active = is_active
         if (image_url !== undefined) safeUpdates.image_url = image_url || null
         
-        const { data: retryOffer, error: retryError } = await adminClient
+        const { data: retryOffer, error: retryError } = await (adminClient as any)
           .from('offers')
           .update(safeUpdates)
           .eq('id', id)

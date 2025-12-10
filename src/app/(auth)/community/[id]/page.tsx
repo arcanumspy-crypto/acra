@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
+import Image from "next/image"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -83,13 +84,7 @@ export default function CommunityPostsPage() {
   const [uploadingImage, setUploadingImage] = useState(false)
   const { toast } = useToast()
 
-  useEffect(() => {
-    if (communityId) {
-      loadPosts()
-    }
-  }, [communityId, selectedCategory])
-
-  const loadPosts = async () => {
+  const loadPosts = useCallback(async () => {
     try {
       setLoading(true)
       const { data: { session } } = await supabase.auth.getSession()
@@ -120,7 +115,13 @@ export default function CommunityPostsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [communityId, selectedCategory])
+
+  useEffect(() => {
+    if (communityId) {
+      loadPosts()
+    }
+  }, [communityId, loadPosts])
 
   const loadComments = async (postId: string) => {
     try {
@@ -421,9 +422,11 @@ export default function CommunityPostsPage() {
                 </div>
                 {imagePreview && (
                   <div className="relative mt-2">
-                    <img
+                    <Image
                       src={imagePreview}
                       alt="Preview"
+                      width={800}
+                      height={384}
                       className="w-full h-32 md:h-48 object-cover rounded-2xl border border-border/50"
                     />
                   </div>
@@ -500,9 +503,11 @@ export default function CommunityPostsPage() {
                   <div className="relative flex-shrink-0">
                     <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border-2 border-primary/20">
                       {post.profiles?.avatar_url ? (
-                        <img
+                        <Image
                           src={post.profiles.avatar_url}
                           alt={post.profiles.full_name || 'Usuário'}
+                          width={48}
+                          height={48}
                           className="w-full h-full rounded-full object-cover"
                         />
                       ) : (
@@ -541,9 +546,11 @@ export default function CommunityPostsPage() {
                   <p className="text-xs md:text-sm whitespace-pre-wrap leading-relaxed break-words">{post.content}</p>
                   {post.image_url && (
                     <div className="mt-3 md:mt-4 rounded-xl md:rounded-2xl overflow-hidden border border-border/50">
-                      <img
+                      <Image
                         src={post.image_url}
                         alt="Post image"
+                        width={800}
+                        height={384}
                         className="w-full max-h-64 md:max-h-96 object-cover"
                       />
                     </div>
@@ -605,9 +612,11 @@ export default function CommunityPostsPage() {
                         <div key={comment.id} className="flex items-start gap-2 md:gap-3 p-3 md:p-4 bg-muted/50 rounded-xl md:rounded-2xl">
                           <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/20 flex-shrink-0">
                             {comment.profiles?.avatar_url ? (
-                              <img
+                              <Image
                                 src={comment.profiles.avatar_url}
                                 alt={comment.profiles.full_name || 'Usuário'}
+                                width={32}
+                                height={32}
                                 className="w-full h-full rounded-full object-cover"
                               />
                             ) : (

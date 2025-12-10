@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
@@ -51,12 +51,7 @@ export default function AdminSupportPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const { toast } = useToast()
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    loadTickets()
-  }, [statusFilter])
-
-  const loadTickets = async () => {
+  const loadTickets = useCallback(async () => {
     try {
       setLoading(true)
       const { data: { session } } = await supabase.auth.getSession()
@@ -91,7 +86,11 @@ export default function AdminSupportPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast, statusFilter])
+
+  useEffect(() => {
+    loadTickets()
+  }, [loadTickets])
 
   const handleReply = async (ticketId: string) => {
     if (!replyMessage.trim()) {

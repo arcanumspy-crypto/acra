@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,13 +32,7 @@ export default function AdminAulasPage() {
   const [aulaToDelete, setAulaToDelete] = useState<Aula | null>(null)
   const { toast } = useToast()
 
-  useEffect(() => {
-    loadCurso()
-    loadModulo()
-    loadAulas()
-  }, [cursoId, moduloId])
-
-  const loadCurso = async () => {
+  const loadCurso = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
@@ -59,9 +53,9 @@ export default function AdminAulasPage() {
     } catch (error: any) {
       router.push('/admin/cursos')
     }
-  }
+  }, [cursoId, router])
 
-  const loadModulo = async () => {
+  const loadModulo = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
@@ -82,9 +76,9 @@ export default function AdminAulasPage() {
     } catch (error: any) {
       router.push(`/admin/cursos/${cursoId}/modulos`)
     }
-  }
+  }, [moduloId, cursoId, router])
 
-  const loadAulas = async () => {
+  const loadAulas = useCallback(async () => {
     try {
       setLoading(true)
       const { data: { session } } = await supabase.auth.getSession()
@@ -117,7 +111,13 @@ export default function AdminAulasPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [moduloId, toast])
+
+  useEffect(() => {
+    loadCurso()
+    loadModulo()
+    loadAulas()
+  }, [loadCurso, loadModulo, loadAulas])
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
