@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { Check, Loader2, ArrowLeft, CreditCard, Smartphone } from "lucide-react"
 import Link from "next/link"
 import { useAuthStore } from "@/store/auth-store"
+import { supabase } from "@/lib/supabase/client"
 
 const PLANS = {
   mensal: {
@@ -306,7 +307,7 @@ export default function CheckoutPage() {
                     <span className="text-sm text-[#6b6b6b] dark:text-gray-400">Período</span>
                     <span className="text-sm text-[#0b0c10] dark:text-white">{selectedPlan.period}</span>
                   </div>
-                  {selectedPlan.savings && (
+                  {'savings' in selectedPlan && selectedPlan.savings && (
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm text-green-600 dark:text-green-400">Economia</span>
                       <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
