@@ -178,7 +178,8 @@ export function Sidebar({ className, onNavigate }: SidebarProps = {}) {
     const sections: Record<string, boolean> = {}
     navItems.forEach(item => {
       if ('hasSubmenu' in item && item.hasSubmenu) {
-        sections[getSectionKey(item.href)] = pathname?.startsWith(item.href) || false
+        // Todas as seções vêm abertas por padrão
+        sections[getSectionKey(item.href)] = true
       }
     })
     return sections
