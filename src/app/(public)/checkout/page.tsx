@@ -50,12 +50,8 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState<'plan' | 'payment'>('plan')
 
-  useEffect(() => {
-    // Se não estiver autenticado, redirecionar para signup
-    if (!isAuthenticated && !user) {
-      router.push(`/signup?redirect=/checkout?plan=${planParam}`)
-    }
-  }, [isAuthenticated, user, router, planParam])
+  // Permitir acesso ao checkout mesmo sem autenticação (usuário pode vir do signup)
+  // Mas mostrar mensagem se não estiver autenticado
 
   const validatePhone = (phoneNumber: string): boolean => {
     const digits = phoneNumber.replace(/\D/g, '')
@@ -146,8 +142,31 @@ export default function CheckoutPage() {
 
   if (!isAuthenticated || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="min-h-screen bg-[#f9f9f9] dark:bg-black py-12">
+        <div className="container px-4 md:px-6 max-w-4xl">
+          <Card className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-[#2a2a2a]">
+            <CardHeader>
+              <CardTitle className="text-2xl text-[#0b0c10] dark:text-white">
+                Faça login para continuar
+              </CardTitle>
+              <CardDescription>
+                Você precisa estar logado para fazer o pagamento
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Link href={`/signup?redirect=/checkout?plan=${planParam}`}>
+                <Button className="w-full bg-[#ff5a1f] hover:bg-[#ff4d29] text-white">
+                  Criar Conta
+                </Button>
+              </Link>
+              <Link href={`/login?redirect=/checkout?plan=${planParam}`}>
+                <Button variant="outline" className="w-full">
+                  Já tenho conta
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }
