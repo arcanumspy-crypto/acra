@@ -41,7 +41,7 @@ export async function getActiveCommunitiesForUser(): Promise<CommunityWithStats[
 
     // Get member counts and posts counts for each community (com tratamento de erro individual)
     const communitiesWithStats = await Promise.all(
-      communities.map(async (community) => {
+      communities.map(async (community: any) => {
         try {
           const [memberCountResult, postsCountResult] = await Promise.all([
             supabase

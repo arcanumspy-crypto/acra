@@ -8,8 +8,8 @@ export default function VPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Redirecionar para a página de vozes
-    router.replace("/voices")
+    // Redirecionar para o dashboard
+    router.replace("/dashboard")
   }, [router])
 
   return (

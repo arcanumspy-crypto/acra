@@ -29,11 +29,3 @@ export const AdminDashboard = dynamic(
   }
 )
 
-// Componentes de voz pesados
-export const VoicesPage = dynamic(
-  () => import('@/app/(auth)/voices/page'),
-  { 
-    ssr: false 
-  }
-)
-

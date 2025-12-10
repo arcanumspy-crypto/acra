@@ -5,9 +5,9 @@ type Profile = Database['public']['Tables']['profiles']['Row']
 type Subscription = Database['public']['Tables']['subscriptions']['Row']
 type Plan = Database['public']['Tables']['plans']['Row']
 
-export interface UserWithSubscription extends Profile {
-  email?: string // Email from auth.users
-  phone_number?: string | null // Phone from profiles
+export interface UserWithSubscription extends Omit<Profile, 'phone_number' | 'email'> {
+  email: string | null // Email from auth.users
+  phone_number: string | null // Phone from profiles (mantém o tipo original)
   subscription?: Subscription & { plan?: Plan }
 }
 
@@ -58,7 +58,7 @@ export async function getAllUsers(): Promise<UserWithSubscription[]> {
 
         // Buscar emails de todos os usuários em paralelo
         const usersWithEmail = await Promise.all(
-          (fallbackProfiles || []).map(async (profile) => {
+          (fallbackProfiles || []).map(async (profile: Profile) => {
             try {
               const { data: authUser } = await adminClient.auth.admin.getUserById(profile.id)
               return {
@@ -85,7 +85,7 @@ export async function getAllUsers(): Promise<UserWithSubscription[]> {
 
     // Buscar emails de todos os usuários em paralelo
     const usersWithEmail = await Promise.all(
-      (profiles || []).map(async (profile) => {
+      (profiles || []).map(async (profile: Profile) => {
         try {
           const { data: authUser } = await adminClient.auth.admin.getUserById(profile.id)
           return {
@@ -180,18 +180,19 @@ export async function getUserFullInfoForAdmin(userId: string): Promise<UserFullI
     const { data: authUser } = await adminClient.auth.admin.getUserById(userId)
     const email = authUser?.user?.email || null
 
-    const subscription = profile.subscriptions?.[0]
+    const profileWithSubs = profile as Profile & { subscriptions?: Array<{ status: string; plan?: { name: string; slug: string } }> }
+    const subscription = profileWithSubs.subscriptions?.[0]
     const plan = subscription?.plan
 
     return {
-      id: profile.id,
-      name: profile.name,
-      phone_number: profile.phone_number,
+      id: profileWithSubs.id,
+      name: profileWithSubs.name,
+      phone_number: profileWithSubs.phone_number,
       email,
-      role: profile.role,
+      role: profileWithSubs.role,
       plan: plan ? { name: plan.name, slug: plan.slug } : undefined,
       subscription_status: subscription?.status,
-      created_at: profile.created_at,
+      created_at: profileWithSubs.created_at,
     }
   } catch (error) {
     console.error('Error fetching user full info:', error)

@@ -666,12 +666,6 @@ export default function HomePage() {
                   category: "Ferramentas"
                 },
                 {
-                  icon: Copy,
-                  title: "Clonador",
-                  description: "Clone e adapte criativos e ofertas",
-                  category: "Ferramentas"
-                },
-                {
                   icon: CheckSquare,
                   title: "Sistema de Tarefas",
                   description: "Organize tarefas em listas estilo Kanban/Trello",

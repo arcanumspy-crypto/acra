@@ -96,24 +96,13 @@ export async function GET(request: NextRequest) {
       return sum + (((p as any).amount || 0) * 0.10)
     }, 0)
 
-    // Estatísticas de ferramentas (vozes criadas, gerações de áudio, etc)
-    const { count: totalVoices } = await adminClient
-      .from('voice_clones')
-      .select('*', { count: 'exact', head: true })
+    // Estatísticas de ferramentas (removido: voice cloning desabilitado)
+    const totalVoices = { count: 0 }
 
-    // Créditos gastos com criação de vozes (50 créditos por voz)
-    let voiceActivities: { data: any[] | null } = { data: null }
-    try {
-      const result = await adminClient
-        .from('user_activities')
-        .select('credits_used')
-        .eq('type', 'VOICE_CREATE')
-      voiceActivities = result
-    } catch {
-      voiceActivities = { data: null }
-    }
+    // Créditos gastos com criação de vozes (removido: voice cloning desabilitado)
+    const voiceActivities: { data: any[] | null } = { data: null }
 
-    const voiceCreationCredits = (voiceActivities?.data || []).reduce((sum, a) => sum + (a.credits_used || 0), 0)
+    const voiceCreationCredits = 0 // Removido: voice cloning desabilitado
 
     // Gerações de áudio
     let totalAudioGenerations = 0
@@ -162,9 +151,9 @@ export async function GET(request: NextRequest) {
 
     const toolStats = {
       voiceGeneration: {
-        totalVoices: totalVoices || 0,
+        totalVoices: 0, // Removido: voice cloning desabilitado
         totalCredits: voiceCreationCredits,
-        averageCreditsPerGeneration: totalVoices ? voiceCreationCredits / totalVoices : 0,
+        averageCreditsPerGeneration: 0, // Removido: voice cloning desabilitado
       },
       audioGeneration: {
         totalGenerations: totalAudioGenerations || 0,
