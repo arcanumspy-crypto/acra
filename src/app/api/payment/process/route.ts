@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     let { data: { user }, error: authError } = await supabase.auth.getUser()
 
     // Se não conseguir via cookies, tentar via header
-    if (!user && authError) {
+    if (authError || !user) {
       const authHeader = request.headers.get('authorization') || request.headers.get('Authorization')
       if (authHeader?.startsWith('Bearer ')) {
         const token = authHeader.substring(7)
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { success: false, message: "Não autenticado" },
+        { success: false, message: "Não autenticado. Faça login para continuar." },
         { status: 401 }
       )
     }

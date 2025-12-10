@@ -92,12 +92,28 @@ export default function CheckoutPage() {
       // Gerar referência única
       const reference = `ArcanumSpy-${Date.now()}`
 
+      // Obter token de autenticação
+      const { data: { session } } = await supabase.auth.getSession()
+      const accessToken = session?.access_token
+
+      if (!accessToken) {
+        toast({
+          title: "Erro de autenticação",
+          description: "Sua sessão expirou. Por favor, faça login novamente.",
+          variant: "destructive"
+        })
+        router.push('/login')
+        return
+      }
+
       // Chamar API de pagamento
       const response = await fetch('/api/payment/process', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
         },
+        credentials: 'include',
         body: JSON.stringify({
           amount: selectedPlan.price,
           phone: phoneDigits,
