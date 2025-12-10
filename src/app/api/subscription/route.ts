@@ -1,25 +1,17 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { Database } from "@/types/database"
 
 // Forçar Node runtime, necessário para supabase.auth.getUser()
 export const runtime = 'nodejs'
 
-// Tipagem das tabelas
-type Plan = {
-  id: string
-  name: string
-  price: number
-}
+// Tipos do banco de dados
+type SubscriptionRow = Database['public']['Tables']['subscriptions']['Row']
+type PlanRow = Database['public']['Tables']['plans']['Row']
 
-type Subscription = {
-  id: string
-  user_id: string
-  plan_id: string
-  status: string
-  current_period_end: string
-  created_at: string
-  updated_at: string
-  plan?: Plan
+// Tipo para assinatura com plano relacionado
+type SubscriptionWithPlan = SubscriptionRow & {
+  plan: PlanRow | null
 }
 
 // GET: Buscar assinatura ativa do usuário
@@ -34,7 +26,7 @@ export async function GET() {
     }
 
     const { data: subscription, error } = await supabase
-      .from<Subscription>('subscriptions')
+      .from('subscriptions')
       .select(`
         *,
         plan:plans(*)
@@ -43,10 +35,15 @@ export async function GET() {
       .eq('status', 'active')
       .maybeSingle()
 
-    if (error) throw error
+    if (error) {
+      console.error('Error fetching subscription:', error)
+      throw error
+    }
 
     // Fallback caso não exista assinatura
-    return NextResponse.json({ subscription: subscription ?? null })
+    return NextResponse.json({ 
+      subscription: subscription as SubscriptionWithPlan | null 
+    })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Erro ao buscar assinatura"
     console.error('Error fetching subscription:', message)
@@ -73,51 +70,62 @@ export async function PUT(request: Request) {
 
     // Buscar assinatura atual
     const { data: currentSubscription, error: fetchError } = await supabase
-      .from<Subscription>('subscriptions')
+      .from('subscriptions')
       .select('*')
       .eq('user_id', user.id)
       .eq('status', 'active')
       .maybeSingle()
 
-    if (fetchError) throw fetchError
+    if (fetchError) {
+      console.error('Error fetching current subscription:', fetchError)
+      throw fetchError
+    }
 
     // Calcular período final (30 dias a partir de agora)
     const currentPeriodEnd = new Date()
     currentPeriodEnd.setDate(currentPeriodEnd.getDate() + 30)
+    const currentPeriodEndISO = currentPeriodEnd.toISOString()
+    const nowISO = new Date().toISOString()
 
-    let subscription: Subscription
+    let subscription: SubscriptionWithPlan
 
     if (currentSubscription) {
-      if (!currentSubscription.id) {
-        throw new Error("Assinatura inválida: id não encontrado")
-      }
-
       // Atualizar assinatura existente
-      const { data, error } = await supabase
-        .from<Subscription>('subscriptions')
+      const subscriptionId = (currentSubscription as SubscriptionRow).id
+      const { data, error } = await (supabase
+        .from('subscriptions') as any)
         .update({
           plan_id,
-          current_period_end: currentPeriodEnd.toISOString(),
-          updated_at: new Date().toISOString(),
+          current_period_end: currentPeriodEndISO,
+          updated_at: nowISO,
         })
-        .eq('id', currentSubscription.id)
+        .eq('id', subscriptionId)
         .select(`
           *,
           plan:plans(*)
         `)
         .single()
 
-      if (error) throw error
-      subscription = data
+      if (error) {
+        console.error('Error updating subscription:', error)
+        throw error
+      }
+      
+      if (!data) {
+        throw new Error("Erro ao atualizar assinatura: dados não retornados")
+      }
+      
+      subscription = data as SubscriptionWithPlan
     } else {
       // Criar nova assinatura
-      const { data, error } = await supabase
-        .from<Subscription>('subscriptions')
+      const { data, error } = await (supabase
+        .from('subscriptions') as any)
         .insert({
           user_id: user.id,
           plan_id,
           status: 'active',
-          current_period_end: currentPeriodEnd.toISOString(),
+          started_at: nowISO,
+          current_period_end: currentPeriodEndISO,
         })
         .select(`
           *,
@@ -125,8 +133,16 @@ export async function PUT(request: Request) {
         `)
         .single()
 
-      if (error) throw error
-      subscription = data
+      if (error) {
+        console.error('Error creating subscription:', error)
+        throw error
+      }
+      
+      if (!data) {
+        throw new Error("Erro ao criar assinatura: dados não retornados")
+      }
+      
+      subscription = data as SubscriptionWithPlan
     }
 
     return NextResponse.json({ subscription })
