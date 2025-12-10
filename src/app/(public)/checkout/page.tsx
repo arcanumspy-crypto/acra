@@ -94,10 +94,32 @@ export default function CheckoutPage() {
       const reference = `ArcanumSpy-${Date.now()}`
 
       // Obter token de autenticação
-      const { data: { session } } = await supabase.auth.getSession()
-      const accessToken = session?.access_token
+      let accessToken: string | null = null
+      
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        if (sessionError) {
+          console.error('Erro ao obter sessão:', sessionError)
+        }
+        
+        accessToken = session?.access_token || null
+        
+        // Se não conseguir via getSession, tentar obter do usuário atual
+        if (!accessToken && user) {
+          const { data: { user: currentUser } } = await supabase.auth.getUser()
+          if (currentUser) {
+            // Tentar obter token da sessão novamente
+            const { data: { session: retrySession } } = await supabase.auth.getSession()
+            accessToken = retrySession?.access_token || null
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao obter token:', error)
+      }
 
       if (!accessToken) {
+        console.error('❌ [Checkout] Token de autenticação não encontrado')
         toast({
           title: "Erro de autenticação",
           description: "Sua sessão expirou. Por favor, faça login novamente.",
@@ -106,6 +128,8 @@ export default function CheckoutPage() {
         router.push('/login')
         return
       }
+      
+      console.log('✅ [Checkout] Token obtido, enviando requisição de pagamento')
 
       // Chamar API de pagamento
       const response = await fetch('/api/payment/process', {

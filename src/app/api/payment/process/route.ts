@@ -10,6 +10,7 @@ const EMOLA_WALLET_ID = '993606'
 export async function POST(request: NextRequest) {
   try {
     let user = null
+    let authError: any = null
     
     // Primeiro tentar via cookies
     const supabase = await createClient()
@@ -18,38 +19,57 @@ export async function POST(request: NextRequest) {
     if (userFromCookies && !cookieError) {
       user = userFromCookies
     } else {
+      authError = cookieError
       // Se não conseguir via cookies, tentar via header
       const authHeader = request.headers.get('authorization') || request.headers.get('Authorization')
       if (authHeader?.startsWith('Bearer ')) {
         const token = authHeader.substring(7)
         try {
-          // Validar token diretamente com Supabase
-          const { createClient: createSupabaseClient } = await import('@supabase/supabase-js')
+          // Validar token diretamente com Supabase (seguindo padrão de outras APIs)
+          const supabaseModule = await import('@supabase/supabase-js')
+          const createSupabaseClient = supabaseModule.createClient
           const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
           const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
           
           if (!supabaseUrl || !supabaseAnonKey) {
-            console.error('Variáveis de ambiente do Supabase não configuradas')
+            console.error('⚠️ [Payment API] Variáveis de ambiente do Supabase não configuradas')
           } else {
-            const tempClient = createSupabaseClient(supabaseUrl, supabaseAnonKey)
+            // Criar cliente com token no header global (padrão usado em outras APIs)
+            const tempClient = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+              global: {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              },
+            })
             const { data: { user: userFromToken }, error: tokenError } = await tempClient.auth.getUser(token)
             
             if (userFromToken && !tokenError) {
               user = userFromToken
+              authError = null
+              console.log('✅ [Payment API] Usuário autenticado via token:', user.id)
             } else {
-              console.error('Erro ao validar token:', tokenError?.message || 'Token inválido')
+              console.error('⚠️ [Payment API] Erro ao validar token:', tokenError?.message || 'Token inválido')
+              authError = tokenError
             }
           }
         } catch (error: any) {
-          console.error('Erro ao criar cliente temporário:', error.message || error)
+          console.error('⚠️ [Payment API] Erro ao criar cliente temporário:', error.message || error)
+          authError = error
         }
+      } else {
+        console.warn('⚠️ [Payment API] Nenhum token de autenticação encontrado no header')
       }
     }
 
     if (!user) {
-      console.error('Usuário não autenticado. Cookie error:', cookieError?.message)
+      console.error('❌ [Payment API] Usuário não autenticado. Cookie error:', authError?.message || 'Nenhum método de autenticação funcionou')
       return NextResponse.json(
-        { success: false, message: "Não autenticado. Faça login para continuar." },
+        { 
+          success: false, 
+          message: "Não autenticado. Faça login para continuar.",
+          error: authError?.message || 'Autenticação falhou'
+        },
         { status: 401 }
       )
     }
