@@ -783,6 +783,132 @@ export default function HomePage() {
         </div>
       </SectionReveal>
 
+      {/* Planos */}
+      <SectionReveal className="py-12 sm:py-16 md:py-20 lg:py-24 bg-[#f9f9f9] dark:bg-black">
+        <div className="container px-4 sm:px-6 md:px-8">
+          <ScrollAnimation>
+            <div className="text-center mb-8 sm:mb-12 md:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#0b0c10] dark:text-white mb-3 sm:mb-4">
+                Escolha seu Plano
+              </h2>
+              <p className="text-sm sm:text-base md:text-lg text-[#6b6b6b] dark:text-gray-400 max-w-2xl mx-auto px-4">
+                Planos flexíveis para atender suas necessidades. Pague mensal, trimestral ou anual.
+              </p>
+            </div>
+          </ScrollAnimation>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
+            {[
+              {
+                name: "Mensal",
+                price: 800,
+                period: "mês",
+                savings: null,
+                popular: false,
+                features: [
+                  "Acesso completo à plataforma",
+                  "Ofertas ilimitadas",
+                  "Todas as ferramentas de IA",
+                  "Espionagem de domínios",
+                  "Suporte por email",
+                  "Atualizações diárias"
+                ]
+              },
+              {
+                name: "Trimestral",
+                price: 2160, // 800 * 3 * 0.9 (10% desconto)
+                originalPrice: 2400, // 800 * 3
+                period: "3 meses",
+                savings: "10% de desconto",
+                popular: true,
+                features: [
+                  "Tudo do plano Mensal",
+                  "10% de desconto",
+                  "Economia de 240 MT",
+                  "Pagamento trimestral",
+                  "Prioridade no suporte"
+                ]
+              },
+              {
+                name: "Anual",
+                price: 7680, // 800 * 12 * 0.8 (20% desconto)
+                originalPrice: 9600, // 800 * 12
+                period: "ano",
+                savings: "20% de desconto",
+                popular: false,
+                features: [
+                  "Tudo do plano Mensal",
+                  "20% de desconto",
+                  "Economia de 1.920 MT",
+                  "Pagamento anual",
+                  "Suporte prioritário",
+                  "Acesso a recursos beta"
+                ]
+              }
+            ].map((plan, index) => (
+              <ScrollAnimation key={index} delay={index * 0.1}>
+                <motion.div
+                  whileHover={{ scale: 1.02, y: -5 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Card className={`bg-white dark:bg-black border-2 ${plan.popular ? 'border-[#ff5a1f] shadow-xl' : 'border-gray-200 dark:border-gray-800'} rounded-xl sm:rounded-2xl p-6 sm:p-8 h-full flex flex-col relative overflow-hidden`}>
+                    {plan.popular && (
+                      <div className="absolute top-0 right-0 bg-[#ff5a1f] text-white px-4 py-1 text-xs font-semibold rounded-bl-lg">
+                        Mais Popular
+                      </div>
+                    )}
+                    
+                    <div className="mb-6">
+                      <h3 className="text-xl sm:text-2xl font-bold text-[#0b0c10] dark:text-white mb-2">
+                        {plan.name}
+                      </h3>
+                      <div className="flex items-baseline gap-2 mb-2">
+                        <span className="text-3xl sm:text-4xl font-bold text-[#ff5a1f]">
+                          {plan.price.toLocaleString('pt-MZ')}
+                        </span>
+                        <span className="text-sm text-[#6b6b6b] dark:text-gray-400">MT</span>
+                        {plan.originalPrice && (
+                          <span className="text-sm line-through text-[#6b6b6b] dark:text-gray-500 ml-2">
+                            {plan.originalPrice.toLocaleString('pt-MZ')} MT
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-[#6b6b6b] dark:text-gray-400">
+                        por {plan.period}
+                      </p>
+                      {plan.savings && (
+                        <Badge className="mt-2 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                          {plan.savings}
+                        </Badge>
+                      )}
+                    </div>
+
+                    <ul className="flex-1 space-y-3 mb-6">
+                      {plan.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <Check className="w-5 h-5 text-[#ff5a1f] flex-shrink-0 mt-0.5" />
+                          <span className="text-sm text-[#6b6b6b] dark:text-gray-400">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <Link href={`/checkout?plan=${plan.name.toLowerCase()}`} className="w-full">
+                      <Button 
+                        size="lg"
+                        className={`w-full ${plan.popular ? 'bg-[#ff5a1f] hover:bg-[#ff4d29] text-white' : 'bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-100'} rounded-full font-semibold`}
+                      >
+                        Escolher {plan.name}
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </Card>
+                </motion.div>
+              </ScrollAnimation>
+            ))}
+          </div>
+        </div>
+      </SectionReveal>
+
       {/* CTA Final */}
       <SectionReveal className="py-12 sm:py-16 md:py-20 lg:py-24 bg-white dark:bg-black" offset={40}>
         <div className="container px-4 sm:px-6 md:px-8">

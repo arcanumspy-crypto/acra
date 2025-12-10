@@ -62,10 +62,11 @@ function SignupFormContent() {
 
       toast({
         title: "Conta criada com sucesso!",
-        description: "Bem-vindo ao ArcanumSpy! Você receberá créditos grátis para começar.",
+        description: "Redirecionando para escolher seu plano...",
       })
 
-      router.push("/dashboard")
+      // Redirecionar para checkout para escolher plano e pagar
+      router.push("/checkout?plan=mensal")
     } catch (error: any) {
       toast({
         title: "Erro",

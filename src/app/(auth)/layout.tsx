@@ -32,6 +32,8 @@ export default function AuthLayout({
   const [initialized, setInitialized] = useState(false)
   // CORREÇÃO: Timeout de segurança para evitar loading infinito (declarar antes de usar)
   const [safetyTimeout, setSafetyTimeout] = useState(false)
+  const [hasActivePayment, setHasActivePayment] = useState<boolean | null>(null)
+  const [checkingPayment, setCheckingPayment] = useState(true)
 
   // CORREÇÃO: Inicializar auth apenas uma vez, com controle de estado
   useEffect(() => {
@@ -122,10 +124,54 @@ export default function AuthLayout({
     
     return () => clearTimeout(timeout)
   }, [])
+
+  // Verificar se usuário tem pagamento confirmado
+  useEffect(() => {
+    const checkPayment = async () => {
+      if (!user || !isAuthenticated) {
+        setCheckingPayment(false)
+        return
+      }
+
+      try {
+        const response = await fetch('/api/payment/check', {
+          credentials: 'include',
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          setHasActivePayment(data.hasActivePayment || false)
+        } else {
+          setHasActivePayment(false)
+        }
+      } catch (error) {
+        console.error('Erro ao verificar pagamento:', error)
+        setHasActivePayment(false)
+      } finally {
+        setCheckingPayment(false)
+      }
+    }
+
+    if (isAuthenticated && user && initialized) {
+      checkPayment()
+    }
+  }, [isAuthenticated, user, initialized])
+
+  // Redirecionar para checkout se não tem pagamento
+  useEffect(() => {
+    if (!checkingPayment && hasActivePayment === false && isAuthenticated && user && !redirecting) {
+      const currentPath = window.location.pathname
+      // Não redirecionar se já está no checkout
+      if (!currentPath.includes('/checkout')) {
+        setRedirecting(true)
+        router.push('/checkout?plan=mensal')
+      }
+    }
+  }, [hasActivePayment, checkingPayment, isAuthenticated, user, redirecting, router])
   
   // CORREÇÃO: Mostrar loading apenas se ainda não inicializou E não passou o timeout de segurança
   // Se passou o timeout, sempre permitir renderização (mesmo que ainda esteja carregando)
-  const shouldShowLoading = (!mounted || (!initialized && !safetyTimeout) || (isLoading && !safetyTimeout))
+  const shouldShowLoading = (!mounted || (!initialized && !safetyTimeout) || (isLoading && !safetyTimeout) || checkingPayment)
   
   if (shouldShowLoading) {
     return (
@@ -133,6 +179,23 @@ export default function AuthLayout({
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Bloquear acesso se não tem pagamento confirmado (exceto checkout)
+  if (hasActivePayment === false && !window.location.pathname.includes('/checkout')) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md mx-auto p-6">
+          <h2 className="text-2xl font-bold mb-4">Pagamento Necessário</h2>
+          <p className="text-muted-foreground mb-6">
+            Você precisa completar o pagamento para acessar a plataforma.
+          </p>
+          <Button onClick={() => router.push('/checkout?plan=mensal')} className="bg-[#ff5a1f] hover:bg-[#ff4d29]">
+            Ir para Checkout
+          </Button>
         </div>
       </div>
     )
