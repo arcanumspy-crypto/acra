@@ -227,6 +227,14 @@ export const useAuthStore = create<AuthState>()(
       signup: async (email: string, password: string, name: string) => {
         set({ isLoading: true })
         try {
+          // Verificar se as variáveis de ambiente estão configuradas
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+          const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+          
+          if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === 'undefined' || supabaseAnonKey === 'undefined' || supabaseUrl.includes('placeholder')) {
+            throw new Error('Configuração do servidor incompleta. As variáveis de ambiente do Supabase não estão configuradas. Por favor, entre em contato com o suporte ou verifique a documentação em CONFIGURAR_VERCEL_PRODUCAO.md')
+          }
+
           // 1. Criar usuário no Supabase Auth
           const { data, error } = await supabase.auth.signUp({
             email,
@@ -238,7 +246,13 @@ export const useAuthStore = create<AuthState>()(
             },
           })
 
-          if (error) throw error
+          if (error) {
+            // Verificar se é erro de configuração
+            if (error.message?.includes('Failed to fetch') || error.message?.includes('ERR_NAME_NOT_RESOLVED') || error.message?.includes('placeholder')) {
+              throw new Error('Configuração do servidor incompleta. As variáveis de ambiente do Supabase não estão configuradas corretamente no Vercel. Por favor, entre em contato com o suporte.')
+            }
+            throw error
+          }
 
           if (!data.user) {
             throw new Error('Signup não retornou usuário')
