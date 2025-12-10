@@ -349,7 +349,7 @@ export async function getRecentActivities(limit = 10): Promise<RecentActivity[]>
           .in('id', offerIds)
         
         if (offers) {
-          offersMap = offers.reduce((acc: Record<string, { id: string; title: string }>, offer) => {
+          offersMap = offers.reduce((acc: Record<string, { id: string; title: string }>, offer: { id: string; title: string }) => {
             acc[offer.id] = offer
             return acc
           }, {} as Record<string, { id: string; title: string }>)

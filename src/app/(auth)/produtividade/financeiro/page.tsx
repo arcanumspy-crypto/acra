@@ -111,6 +111,28 @@ export default function FinanceiroPage() {
     setSubmitting(true)
 
     try {
+      // Validação
+      if (!formData.descricao.trim()) {
+        toast({
+          title: "Erro",
+          description: "Descrição é obrigatória",
+          variant: "destructive"
+        })
+        setSubmitting(false)
+        return
+      }
+
+      const valorNumerico = parseFloat(formData.valor.toString().replace(',', '.'))
+      if (isNaN(valorNumerico) || valorNumerico <= 0) {
+        toast({
+          title: "Erro",
+          description: "Valor deve ser um número maior que zero",
+          variant: "destructive"
+        })
+        setSubmitting(false)
+        return
+      }
+
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
         toast({
@@ -131,10 +153,10 @@ export default function FinanceiroPage() {
         credentials: 'include',
         body: JSON.stringify({
           tipo: formData.tipo,
-          descricao: formData.descricao,
-          valor: parseFloat(formData.valor),
-          categoria: formData.categoria,
-          data: formData.data
+          descricao: formData.descricao.trim(),
+          valor: valorNumerico,
+          categoria: formData.categoria || 'outros',
+          data: formData.data || new Date().toISOString().split('T')[0]
         }),
       })
 

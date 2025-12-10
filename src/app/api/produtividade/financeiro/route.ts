@@ -117,9 +117,35 @@ export async function POST(request: Request) {
     }
     const { tipo, descricao, valor, categoria, data } = body
 
-    if (!tipo || !descricao || valor === undefined) {
+    // Validações
+    if (!tipo || (tipo !== 'receita' && tipo !== 'despesa')) {
       return NextResponse.json(
-        { error: "Tipo, descrição e valor são obrigatórios" },
+        { error: "Tipo deve ser 'receita' ou 'despesa'" },
+        { status: 400 }
+      )
+    }
+
+    if (!descricao || !descricao.trim()) {
+      return NextResponse.json(
+        { error: "Descrição é obrigatória" },
+        { status: 400 }
+      )
+    }
+
+    if (valor === undefined || valor === null) {
+      return NextResponse.json(
+        { error: "Valor é obrigatório" },
+        { status: 400 }
+      )
+    }
+
+    const valorNumerico = typeof valor === 'string' 
+      ? parseFloat(valor.replace(',', '.')) 
+      : Number(valor)
+
+    if (isNaN(valorNumerico) || valorNumerico <= 0) {
+      return NextResponse.json(
+        { error: "Valor deve ser um número maior que zero" },
         { status: 400 }
       )
     }
@@ -129,17 +155,18 @@ export async function POST(request: Request) {
       .insert({
         user_id: user.id,
         tipo,
-        descricao,
-        valor,
+        descricao: descricao.trim(),
+        valor: valorNumerico,
         categoria: categoria || 'outros',
-        data: data || new Date().toISOString()
+        data: data || new Date().toISOString().split('T')[0]
       })
       .select()
       .single()
 
     if (error) {
+      console.error('[POST /api/produtividade/financeiro] Erro ao criar transação:', error)
       return NextResponse.json(
-        { error: "Erro ao criar transação", details: error.message },
+        { error: "Erro ao criar transação", details: error.message, code: error.code },
         { status: 500 }
       )
     }

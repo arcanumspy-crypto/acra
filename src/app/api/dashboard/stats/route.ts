@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { getDashboardStats } from "@/lib/db/dashboard"
+import { getDashboardStats } from "@/lib/db/dashboard-server"
 import { withMediumCache } from "@/lib/api-cache"
 
 /**

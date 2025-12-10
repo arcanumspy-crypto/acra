@@ -109,10 +109,8 @@ export default function TarefaPage() {
 
       if (response.ok) {
         const data = await response.json()
-        console.log('[loadListas] Dados recebidos:', data)
         if (data.success) {
           const listasRecebidas = data.listas || []
-          console.log('[loadListas] Listas recebidas:', listasRecebidas.length)
           setListas(listasRecebidas)
           // Se não houver listas, criar uma padrão
           if (listasRecebidas.length === 0) {
@@ -219,7 +217,6 @@ export default function TarefaPage() {
 
       if (response.ok) {
         const result = await response.json()
-        console.log('Resposta da API:', result)
         
         if (result.success) {
           // Se for edição, atualizar a lista no estado
@@ -232,16 +229,10 @@ export default function TarefaPage() {
           } 
           // Se for criação, adicionar a nova lista ao estado
           else if (result.lista && !editingLista) {
-            console.log('[handleCreateLista] Adicionando lista ao estado:', result.lista)
-            setListas(prevListas => {
-              const novasListas = [...prevListas, result.lista]
-              console.log('[handleCreateLista] Estado atualizado, total de listas:', novasListas.length)
-              return novasListas
-            })
+            setListas(prevListas => [...prevListas, result.lista])
           }
           // Se não tiver a lista na resposta, recarregar todas
           else {
-            console.log('[handleCreateLista] Lista não encontrada na resposta, recarregando...')
             // Aguardar um pouco antes de recarregar para garantir que o banco foi atualizado
             setTimeout(async () => {
               await loadListas()

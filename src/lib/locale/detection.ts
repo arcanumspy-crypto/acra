@@ -106,12 +106,13 @@ export async function detectLocaleFromIP(): Promise<CountryLocale> {
   if (location) {
     const locale = getLocaleByCountryCode(location.countryCode)
     return {
-      country: location.countryName,
+      countryName: location.countryName,
       countryCode: location.countryCode,
+      language: locale.language,
       locale: locale.locale,
       currency: locale.currency,
+      currencySymbol: locale.currencySymbol,
     }
-    return locale
   }
 
   console.warn('⚠️ Não foi possível detectar localização, usando padrão:', DEFAULT_LOCALE)

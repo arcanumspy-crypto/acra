@@ -219,8 +219,8 @@ export async function adminReplyToTicket(
     const adminClient = createAdminClient()
 
     // Insert reply
-    const { data: reply, error: replyError } = await adminClient
-      .from('ticket_replies')
+    const { data: reply, error: replyError } = await (adminClient
+      .from('ticket_replies') as any)
       .insert({
         ticket_id: ticketId,
         user_id: adminUserId,
@@ -241,8 +241,8 @@ export async function adminReplyToTicket(
       updateData.status = status
     }
 
-    await adminClient
-      .from('tickets')
+    await (adminClient
+      .from('tickets') as any)
       .update(updateData)
       .eq('id', ticketId)
 

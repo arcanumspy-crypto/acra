@@ -49,26 +49,26 @@ export async function adminGetFinancialOverview(): Promise<FinancialOverview> {
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
 
     // Revenue today
-    const { data: todayPayments } = await adminClient
-      .from('payments')
+    const { data: todayPayments } = await (adminClient
+      .from('payments') as any)
       .select('amount_cents')
       .eq('status', 'paid')
       .gte('paid_at', today.toISOString())
 
-    const total_revenue_today = (todayPayments || []).reduce((sum, p) => sum + (p.amount_cents || 0), 0)
+    const total_revenue_today = (todayPayments || []).reduce((sum: number, p: any) => sum + (p.amount_cents || 0), 0)
 
     // Revenue this month
-    const { data: monthPayments } = await adminClient
-      .from('payments')
+    const { data: monthPayments } = await (adminClient
+      .from('payments') as any)
       .select('amount_cents')
       .eq('status', 'paid')
       .gte('paid_at', monthStart.toISOString())
 
-    const total_revenue_this_month = (monthPayments || []).reduce((sum, p) => sum + (p.amount_cents || 0), 0)
+    const total_revenue_this_month = (monthPayments || []).reduce((sum: number, p: any): number => sum + (p.amount_cents || 0), 0)
 
     // Pending payments count
-    const { count: payments_pending_count } = await adminClient
-      .from('payments')
+    const { count: payments_pending_count } = await (adminClient
+      .from('payments') as any)
       .select('*', { count: 'exact', head: true })
       .eq('status', 'pending')
 
@@ -79,8 +79,8 @@ export async function adminGetFinancialOverview(): Promise<FinancialOverview> {
       .eq('status', 'active')
 
     // Most paid plan
-    const { data: planStats } = await adminClient
-      .from('payments')
+    const { data: planStats } = await (adminClient
+      .from('payments') as any)
       .select('plan_id, plans(name)')
       .eq('status', 'paid')
 
@@ -94,7 +94,7 @@ export async function adminGetFinancialOverview(): Promise<FinancialOverview> {
       planCounts[planId].count++
     })
 
-    const most_paid_plan = Object.values(planCounts).reduce((max, plan) => {
+    const most_paid_plan = Object.values(planCounts).reduce((max: { name: string; count: number } | null, plan: { name: string; count: number }) => {
       return plan.count > (max?.count || 0) ? plan : max
     }, null as { name: string; count: number } | null)
 
@@ -125,8 +125,8 @@ export async function adminGetPayments(filters?: PaymentFilters): Promise<Paymen
     const { createAdminClient } = await import('@/lib/supabase/admin')
     const adminClient = createAdminClient()
 
-    let query = adminClient
-      .from('payments')
+    let query = (adminClient
+      .from('payments') as any)
       .select(`
         *,
         user:profiles(id, name, phone_number),
@@ -170,8 +170,8 @@ export async function adminGetUsersWithPendingPayments(): Promise<PaymentWithUse
     const { createAdminClient } = await import('@/lib/supabase/admin')
     const adminClient = createAdminClient()
 
-    const { data, error } = await adminClient
-      .from('payments')
+    const { data, error } = await (adminClient
+      .from('payments') as any)
       .select(`
         *,
         user:profiles(id, name, phone_number),
@@ -201,8 +201,8 @@ export async function createPayment(payment: PaymentInsert): Promise<Payment | n
     const { createAdminClient } = await import('@/lib/supabase/admin')
     const adminClient = createAdminClient()
 
-    const { data, error } = await adminClient
-      .from('payments')
+    const { data, error } = await (adminClient
+      .from('payments') as any)
       .insert(payment)
       .select()
       .single()
@@ -230,8 +230,8 @@ export async function updatePaymentStatus(paymentId: string, status: Payment['st
     }
 
     // Buscar dados do pagamento antes de atualizar (para enviar email se necessário)
-    const { data: paymentBefore } = await adminClient
-      .from('payments')
+    const { data: paymentBefore } = await (adminClient
+      .from('payments') as any)
       .select(`
         *,
         user:profiles(id, name, email),
@@ -240,8 +240,8 @@ export async function updatePaymentStatus(paymentId: string, status: Payment['st
       .eq('id', paymentId)
       .single()
 
-    const { data, error } = await adminClient
-      .from('payments')
+    const { data, error } = await (adminClient
+      .from('payments') as any)
       .update(updateData)
       .eq('id', paymentId)
       .select(`

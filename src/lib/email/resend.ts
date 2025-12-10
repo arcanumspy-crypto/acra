@@ -28,7 +28,7 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
       subject: options.subject,
       html: options.html,
       text: options.text || options.html.replace(/<[^>]*>/g, ''),
-      reply_to: options.replyTo,
+      replyTo: options.replyTo,
     })
 
     if (error) {

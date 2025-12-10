@@ -217,7 +217,8 @@ function validateInput(input: any): { valid: boolean; error?: string } {
 export async function POST(request: NextRequest) {
   try {
     // Obter usuário autenticado
-    const supabase = await createClient()
+    let supabase = await createClient()
+    let supabaseClient = supabase
     
     // Try to get user from cookies first
     let { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -241,6 +242,7 @@ export async function POST(request: NextRequest) {
         if (userFromToken) {
           user = userFromToken
           authError = null
+          supabaseClient = tempClient // Usar o cliente com token para operações no banco
         }
       }
     }
@@ -287,7 +289,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 5. Retornar resposta estruturada
+    // 5. Salvar no banco de dados
+    try {
+      const { data: savedCopy, error: saveError } = await (supabaseClient
+        .from('copies_criativas') as any)
+        .insert({
+          user_id: user.id,
+          style: body.style,
+          creative_type: body.creative_type,
+          mechanism: body.mechanism,
+          product_name: body.product_name,
+          audience_age: body.audience_age,
+          pain: body.pain || null,
+          promise: body.promise || null,
+          benefits: body.benefits || null,
+          story: body.story || null,
+          description: body.description || null,
+          headline: copy.headline,
+          subheadline: copy.subheadline,
+          body: copy.body,
+          cta: copy.cta
+        })
+        .select()
+        .single()
+
+      if (saveError) {
+        console.warn('⚠️ Erro ao salvar copy no banco (não crítico):', saveError.message)
+      } else {
+        console.log('✅ Copy salva no banco:', savedCopy?.id)
+      }
+    } catch (dbError: any) {
+      console.warn('⚠️ Erro ao salvar copy no banco (não crítico):', dbError.message)
+    }
+
+    // 6. Retornar resposta estruturada
     return NextResponse.json({
       success: true,
       copy: copy

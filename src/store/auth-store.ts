@@ -54,7 +54,8 @@ export const useAuthStore = create<AuthState>()(
         // Mas SEMPRE verificar a sessão do Supabase para garantir que está sincronizado
         if (currentState.user && currentState.profile && !currentState.isLoading && currentState.isAuthenticated) {
           // Verificar se a sessão ainda é válida (sem bloquear a UI)
-          supabase.auth.getSession().then(({ data: { session } }) => {
+          supabase.auth.getSession().then(({ data }) => {
+            const session = data?.session
             if (!session) {
               // Sessão expirada - limpar estado
               set({ user: null, profile: null, isAuthenticated: false, isLoading: false })

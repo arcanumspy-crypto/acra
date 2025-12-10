@@ -64,6 +64,12 @@ type SidebarProps = {
 
 const userNavItems = [
   { 
+    href: "/tutorial", 
+    label: "Tutorial", 
+    icon: GraduationCap, 
+    hasSubmenu: false
+  },
+  { 
     href: "/conteudos", 
     label: "Conteúdo", 
     icon: BookOpen, 
@@ -98,6 +104,7 @@ const userNavItems = [
       { href: "/ias/transcrever-audio", label: "Transcrever Áudio", icon: FileAudio },
       { href: "/ias/upscale", label: "Upscale", icon: Maximize2 },
       { href: "/ias/remover-background", label: "Remover Background", icon: Eraser },
+      { href: "/ias/historico", label: "Histórico", icon: History },
     ]
   },
   { 

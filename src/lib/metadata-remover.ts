@@ -38,10 +38,7 @@ export async function removeImageMetadata(inputBuffer: Buffer): Promise<Buffer> 
     
     const cleanedImage = await sharp(inputBuffer)
       .rotate() // Remove orientação EXIF
-      .toBuffer({
-        // Forçar reprocessamento completo
-        // Isso garante que nenhum metadado seja preservado
-      })
+      .toBuffer()
 
     return cleanedImage
   } catch (error) {

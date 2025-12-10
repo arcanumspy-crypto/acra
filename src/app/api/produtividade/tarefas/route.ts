@@ -253,14 +253,41 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { user, error: authError } = await getAuthenticatedUser(request)
 
-    if (!user) {
+    if (authError || !user) {
+      console.error('[PATCH /api/produtividade/tarefas] Erro de autenticação:', authError)
       return NextResponse.json(
         { error: "Não autenticado" },
         { status: 401 }
       )
+    }
+
+    // Criar cliente Supabase - tentar com cookies primeiro
+    let supabase = await createClient()
+    
+    // Verificar autenticação do cliente
+    const { data: { user: supabaseUser }, error: supabaseAuthError } = await supabase.auth.getUser()
+    
+    // Se não estiver autenticado via cookies, tentar via header Authorization
+    if (supabaseAuthError || !supabaseUser) {
+      const authHeader = request.headers.get('authorization') || request.headers.get('Authorization')
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.substring(7)
+        console.log('[PATCH /api/produtividade/tarefas] Criando cliente com token do header')
+        
+        // Criar cliente com token explicitamente
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        const { createClient: createSupabaseClient } = await import('@supabase/supabase-js')
+        supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        })
+      }
     }
 
     const body = await request.json()
@@ -282,6 +309,7 @@ export async function PATCH(request: NextRequest) {
       .single()
 
     if (error) {
+      console.error('[PATCH /api/produtividade/tarefas] Erro ao atualizar tarefa:', error)
       return NextResponse.json(
         { error: "Erro ao atualizar tarefa", details: error.message },
         { status: 500 }
@@ -293,6 +321,7 @@ export async function PATCH(request: NextRequest) {
       tarefa: data
     })
   } catch (error: any) {
+    console.error('[PATCH /api/produtividade/tarefas] Erro inesperado:', error)
     return NextResponse.json(
       { error: error.message || "Erro ao processar requisição" },
       { status: 500 }
