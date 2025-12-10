@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { supabase } from '@/lib/supabase/client'
 import { getCurrentUserProfile } from '@/lib/db/profiles'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
+import type { User as SupabaseUser, Session, AuthError, AuthChangeEvent } from '@supabase/supabase-js'
 import { Database } from '@/types/database'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -54,7 +54,7 @@ export const useAuthStore = create<AuthState>()(
         // Mas SEMPRE verificar a sessão do Supabase para garantir que está sincronizado
         if (currentState.user && currentState.profile && !currentState.isLoading && currentState.isAuthenticated) {
           // Verificar se a sessão ainda é válida (sem bloquear a UI)
-          supabase.auth.getSession().then(({ data }) => {
+          supabase.auth.getSession().then(({ data, error }: { data: { session: Session | null }, error: AuthError | null }) => {
             const session = data?.session
             if (!session) {
               // Sessão expirada - limpar estado
@@ -122,7 +122,7 @@ export const useAuthStore = create<AuthState>()(
           // Usar flag global para garantir que só inicializa uma vez
           if (typeof window !== 'undefined' && !(window as any).__authListenerInitialized) {
             (window as any).__authListenerInitialized = true
-            supabase.auth.onAuthStateChange(async (event, session) => {
+            supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
               try {
                 if (event === 'SIGNED_IN' && session) {
                   const profile = await getCurrentUserProfile()

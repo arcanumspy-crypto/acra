@@ -201,46 +201,52 @@ export default function HomePage() {
   return (
     <div className="flex flex-col bg-[#f9f9f9] dark:bg-black">
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-white dark:bg-black">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-white dark:bg-black" style={{ backgroundColor: 'var(--background)' }}>
         <MotionGrid />
         <MotionBlobs />
         <FloatingIcons />
         
-        <div className="container relative z-10 px-4 sm:px-6 md:px-16 lg:px-20 xl:px-24 py-16 sm:py-20 md:py-32">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="max-w-[1100px] mx-auto text-center space-y-6 sm:space-y-8 md:space-y-10"
+        <div className="container relative z-20 px-4 sm:px-6 md:px-16 lg:px-20 xl:px-24 py-16 sm:py-20 md:py-32">
+          <div
+            className="max-w-[1100px] mx-auto text-center space-y-6 sm:space-y-8 md:space-y-10 relative z-30"
+            style={{ opacity: 1, zIndex: 30 }}
           >
             {/* Badge */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-            >
-              <Badge className="bg-[#ff5a1f]/10 text-[#ff5a1f] border-[#ff5a1f]/20 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium">
+            <div style={{ opacity: 1, zIndex: 30 }}>
+              <Badge className="bg-[#ff5a1f]/10 text-[#ff5a1f] border-[#ff5a1f]/20 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium relative z-30">
                 Plataforma Completa de Marketing e IA
               </Badge>
-            </motion.div>
+            </div>
 
             {/* Título */}
             <h1
-              className="text-2xl leading-tight sm:text-3xl sm:leading-snug md:text-4xl md:leading-[1.2] lg:text-5xl xl:text-6xl font-bold tracking-tight text-[#0b0c10] dark:text-white mx-auto px-2 sm:px-4"
+              className="text-2xl leading-tight sm:text-3xl sm:leading-snug md:text-4xl md:leading-[1.2] lg:text-5xl xl:text-6xl font-bold tracking-tight mx-auto px-2 sm:px-4 relative z-30"
+              style={{ 
+                color: 'white',
+                zIndex: 30,
+                textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+              }}
             >
               <span className="block mb-1">Escale seus{" "}
-              <span className="text-[#ff5a1f]">anúncios</span>{" "}com ofertas e criativos</span>
+              <span className="text-[#ff5a1f]" style={{ color: '#ff5a1f' }}>anúncios</span>{" "}com ofertas e criativos</span>
               <span className="block">que{" "}
-              <span className="text-[#ff5a1f]">realmente convertem</span></span>
+              <span className="text-[#ff5a1f]" style={{ color: '#ff5a1f' }}>realmente convertem</span></span>
             </h1>
 
             {/* Subtítulo */}
-            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-[#6b6b6b] dark:text-gray-400 max-w-[900px] mx-auto leading-relaxed px-4 sm:px-6 md:px-8 font-light">
+            <p 
+              className="text-sm sm:text-base md:text-lg lg:text-xl max-w-[900px] mx-auto leading-relaxed px-4 sm:px-6 md:px-8 font-light relative z-30" 
+              style={{ 
+                color: 'rgba(255, 255, 255, 0.9)',
+                zIndex: 30,
+                textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+              }}
+            >
               Acesse milhares de ofertas escaladas, gere copy profissional e monitore criativos que estão dominando o mercado de resposta direta.
             </p>
             
             {/* Badge de Funcionalidades */}
-            <div className="relative bg-gradient-to-r from-[#ff5a1f]/10 via-[#ff5a1f]/5 to-[#ff5a1f]/10 dark:from-[#ff5a1f]/20 dark:via-[#ff5a1f]/10 dark:to-[#ff5a1f]/20 border border-[#ff5a1f]/20 dark:border-[#ff5a1f]/30 rounded-xl p-4 sm:p-5 md:p-6 max-w-[900px] mx-auto overflow-hidden">
+            <div className="relative bg-gradient-to-r from-[#ff5a1f]/10 via-[#ff5a1f]/5 to-[#ff5a1f]/10 dark:from-[#ff5a1f]/20 dark:via-[#ff5a1f]/10 dark:to-[#ff5a1f]/20 border border-[#ff5a1f]/20 dark:border-[#ff5a1f]/30 rounded-xl p-4 sm:p-5 md:p-6 max-w-[900px] mx-auto overflow-hidden relative z-30">
               <motion.div
                 className="absolute inset-0 opacity-40 bg-gradient-to-r from-transparent via-white/30 to-transparent dark:via-white/10"
                 animate={{ x: ["-100%", "100%"] }}
@@ -308,7 +314,7 @@ export default function HomePage() {
                 <span>Atualização diária</span>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
