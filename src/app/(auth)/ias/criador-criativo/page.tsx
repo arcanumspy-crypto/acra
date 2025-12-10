@@ -182,7 +182,7 @@ export default function CriadorCriativoPage() {
                 </>
               ) : (
                 <>
-                  <Image className="mr-2 h-4 w-4" />
+                  <ImageIcon className="mr-2 h-4 w-4" />
                   Gerar Criativo
                 </>
               )}
