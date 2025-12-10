@@ -277,9 +277,9 @@ export async function adminCreateCommunity(community: CommunityInsert): Promise<
       ...(community.created_at && { created_at: community.created_at }),
     }
 
-    const { data, error } = await adminClient
-      .from('communities')
-      .insert([insertData] as any)
+    const { data, error } = await (adminClient
+      .from('communities') as any)
+      .insert([insertData])
       .select()
       .single()
 
@@ -310,9 +310,9 @@ export async function adminUpdateCommunity(id: string, updates: CommunityUpdate)
       ...(updates.created_at !== undefined && { created_at: updates.created_at }),
     }
 
-    const { data, error } = await adminClient
-      .from('communities')
-      .update(updateData as any)
+    const { data, error } = await (adminClient
+      .from('communities') as any)
+      .update(updateData)
       .eq('id', id)
       .select()
       .single()

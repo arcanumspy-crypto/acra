@@ -121,9 +121,9 @@ export async function adminCreateNiche(niche: NicheInsert): Promise<Niche | null
       ...(niche.created_at && { created_at: niche.created_at }),
     }
 
-    const { data, error } = await supabase
-      .from('niches')
-      .insert([insertData] as any)
+    const { data, error } = await (supabase
+      .from('niches') as any)
+      .insert([insertData])
       .select()
       .single()
 
@@ -151,9 +151,9 @@ export async function adminUpdateNiche(id: string, updates: NicheUpdate): Promis
       ...(updates.created_at !== undefined && { created_at: updates.created_at }),
     }
 
-    const { data, error } = await supabase
-      .from('niches')
-      .update(updateData as any)
+    const { data, error } = await (supabase
+      .from('niches') as any)
+      .update(updateData)
       .eq('id', id)
       .select()
       .single()

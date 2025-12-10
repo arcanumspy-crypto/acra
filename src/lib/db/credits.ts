@@ -138,10 +138,11 @@ export async function loadCredits(
     }
 
     // Se houver valores customizados, usar eles; senão usar do pacote
-    const creditsToAdd = customValues ? customValues.credits : packageData.credits
-    const bonusCredits = customValues ? 0 : (packageData.bonus_credits || 0)
+    const packageDataTyped = packageData as any
+    const creditsToAdd = customValues ? customValues.credits : (packageDataTyped?.credits || 0)
+    const bonusCredits = customValues ? 0 : (packageDataTyped?.bonus_credits || 0)
     const totalCredits = creditsToAdd + bonusCredits
-    const priceCents = customValues ? customValues.price_cents : packageData.price_cents
+    const priceCents = customValues ? customValues.price_cents : (packageDataTyped?.price_cents || 0)
     
 
     // IMPORTANTE: payment_id agora é sempre TEXT (string) na função SQL
@@ -151,7 +152,7 @@ export async function loadCredits(
       : null
 
     const metadata = {
-      package_name: customValues ? `Compra Customizada (${creditsToAdd} créditos)` : packageData.name,
+      package_name: customValues ? `Compra Customizada (${creditsToAdd} créditos)` : (packageDataTyped?.name || 'Pacote'),
       base_credits: creditsToAdd,
       bonus_credits: bonusCredits,
       price_cents: priceCents,
@@ -167,7 +168,7 @@ export async function loadCredits(
       p_category: 'purchase',
       p_description: customValues 
         ? `Compra customizada - ${creditsToAdd} créditos`
-        : `Compra de ${packageData.name} - ${packageData.credits} créditos${packageData.bonus_credits > 0 ? ` + ${packageData.bonus_credits} bônus` : ''}`,
+        : `Compra de ${packageDataTyped?.name || 'Pacote'} - ${packageDataTyped?.credits || 0} créditos${(packageDataTyped?.bonus_credits || 0) > 0 ? ` + ${packageDataTyped?.bonus_credits} bônus` : ''}`,
       p_package_id: packageId,
       p_payment_id: paymentIdAsText, // Sempre TEXT (string) ou null - compatível com migração 022
       p_metadata: metadata
