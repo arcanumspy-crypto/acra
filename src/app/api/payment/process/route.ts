@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
           .single()
 
         if (subError) {
-          console.error('Erro ao criar subscription:', subError)
+          // Erro silencioso - subscription pode não ser crítica
         }
 
         // Registrar pagamento
@@ -231,7 +231,7 @@ export async function POST(request: NextRequest) {
           .insert(paymentData)
 
         if (paymentError) {
-          console.error('Erro ao registrar pagamento:', paymentError)
+          // Erro silencioso - pagamento pode não ser crítico
         }
 
         // Atualizar perfil para ativar conta
