@@ -155,19 +155,48 @@ export default function CheckoutPage() {
 
       const data = await response.json()
 
-      // Fechar popup de processamento
-      setShowProcessingDialog(false)
+      console.log('📦 [Checkout] Resposta do pagamento:', data)
 
-      if (data.success) {
+      // Se sucesso, mostrar mensagem de ativação
+      if (data.success || response.ok) {
+        // Fechar popup de processamento
+        setShowProcessingDialog(false)
+        
+        // Mostrar mensagem de ativação
         toast({
           title: "Pagamento processado!",
-          description: "Sua conta será ativada em instantes. Redirecionando...",
+          description: "Ativando sua conta... Aguarde alguns instantes.",
         })
 
-        // Aguardar 2 segundos e redirecionar
-        setTimeout(() => {
-          router.push('/dashboard')
-        }, 2000)
+        // Aguardar um pouco para garantir que a conta foi ativada
+        await new Promise(resolve => setTimeout(resolve, 3000))
+
+        // Verificar se conta foi ativada
+        try {
+          const checkResponse = await fetch('/api/payment/check', {
+            credentials: 'include',
+          })
+          const checkData = await checkResponse.json()
+          
+          if (checkData.hasActivePayment) {
+            toast({
+              title: "Conta ativada!",
+              description: "Sua conta foi ativada com sucesso. Redirecionando...",
+            })
+          } else {
+            toast({
+              title: "Pagamento processado",
+              description: "Aguarde alguns segundos enquanto ativamos sua conta...",
+            })
+            // Aguardar mais um pouco
+            await new Promise(resolve => setTimeout(resolve, 2000))
+          }
+        } catch (checkError) {
+          console.error('Erro ao verificar ativação:', checkError)
+        }
+
+        // Redirecionar para dashboard
+        router.push('/dashboard')
       } else {
         // Tratar erros específicos
         let errorTitle = "Erro no pagamento"
@@ -407,19 +436,17 @@ export default function CheckoutPage() {
                 Processando Pagamento
               </DialogTitle>
               <DialogDescription className="text-[#6b6b6b] dark:text-gray-400 pt-2">
-                <div className="space-y-3">
-                  <p className="font-medium text-base text-[#0b0c10] dark:text-white">
-                    Está processando...
-                  </p>
-                  <p>
-                    Vai aparecer no seu celular uma solicitação para inserir o PIN do seu {paymentMethod === 'mpesa' ? 'M-Pesa' : 'e-Mola'}.
-                  </p>
-                  <p className="text-sm">
-                    Por favor, confirme o pagamento no seu celular para continuar.
-                  </p>
-                </div>
+                Está processando...
               </DialogDescription>
             </DialogHeader>
+            <div className="space-y-3 text-[#6b6b6b] dark:text-gray-400">
+              <p className="font-medium text-base text-[#0b0c10] dark:text-white">
+                Vai aparecer no seu celular uma solicitação para inserir o PIN do seu {paymentMethod === 'mpesa' ? 'M-Pesa' : 'e-Mola'}.
+              </p>
+              <p className="text-sm">
+                Por favor, confirme o pagamento no seu celular para continuar.
+              </p>
+            </div>
             <div className="flex items-center justify-center py-4">
               <Loader2 className="h-8 w-8 animate-spin text-[#ff5a1f]" />
             </div>

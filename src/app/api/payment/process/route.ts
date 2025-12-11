@@ -155,11 +155,33 @@ export async function POST(request: NextRequest) {
         hasReference: !!responseData.reference,
         message: responseData.message,
         error: responseData.error,
+        success: responseData.success,
         fullResponse: responseData
       })
 
-      if (apiResponse.status === 200 || apiResponse.status === 201) {
-        const transactionId = responseData.transaction_id || responseData.reference || responseData.id || cleanReference
+      // Verificar se pagamento foi bem-sucedido (status 200/201 OU success na resposta)
+      const isSuccess = apiResponse.status === 200 || 
+                       apiResponse.status === 201 || 
+                       responseData.success === true ||
+                       (typeof responseData.success === 'string' && responseData.success.toLowerCase().includes('sucesso')) ||
+                       (responseData.message && responseData.message.toLowerCase().includes('sucesso'))
+      
+      console.log('🔍 [Payment API] Verificando sucesso:', {
+        status: apiResponse.status,
+        hasSuccess: !!responseData.success,
+        successValue: responseData.success,
+        hasMessage: !!responseData.message,
+        messageValue: responseData.message,
+        isSuccess: isSuccess
+      })
+      
+      if (isSuccess) {
+        console.log('✅ [Payment API] Pagamento bem-sucedido, iniciando ativação da conta...')
+        const transactionId = responseData.transaction_id || 
+                              responseData.reference || 
+                              responseData.id || 
+                              responseData.transactionId ||
+                              cleanReference
 
         // Criar assinatura
         const adminClient = createAdminClient()
@@ -457,13 +479,15 @@ export async function POST(request: NextRequest) {
           // Ignorar erro de email - não é crítico para o pagamento
         }
 
+        console.log('✅ [Payment API] Retornando sucesso. Conta ativada:', accountActivated)
+        
         return NextResponse.json({
           success: true,
           transaction_id: transactionId,
           reference: responseData.reference || cleanReference,
           message: 'Pagamento processado com sucesso. Sua conta foi ativada.',
           account_activated: accountActivated,
-        })
+        }, { status: 200 })
       } else {
         // Mensagens específicas para diferentes erros
         let errorMessage = 'Erro ao processar pagamento. Tente novamente.'
