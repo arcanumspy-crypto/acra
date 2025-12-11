@@ -203,7 +203,14 @@ export async function POST(request: NextRequest) {
           }
 
           try {
-            // Tentar upsert (atualizar se existir, criar se não)
+            // Verificar se tabela existe primeiro
+            const { data: tableCheck } = await (adminClient
+              .from('subscriptions') as any)
+              .select('id')
+              .limit(1)
+              .maybeSingle()
+
+            // Se não deu erro, tabela existe - tentar upsert
             const { data: subData, error: subError } = await (adminClient
               .from('subscriptions') as any)
               .upsert(subscriptionData, { onConflict: 'user_id' })
@@ -212,9 +219,34 @@ export async function POST(request: NextRequest) {
 
             if (!subError && subData) {
               subscription = subData
+            } else if (subError?.code === 'PGRST205') {
+              // Tabela não existe - pular criação de subscription
             }
-          } catch (err) {
-            // Continuar mesmo se subscription falhar
+          } catch (err: any) {
+            // Se erro for de tabela não encontrada, continuar
+            if (err?.code !== 'PGRST205') {
+              // Outro erro - tentar criar subscription básica
+              try {
+                const basicSub = {
+                  user_id: user.id,
+                  plan_id: planId,
+                  status: 'active',
+                  started_at: now.toISOString(),
+                  current_period_end: expiresAt.toISOString(),
+                }
+                const { data: basicSubData } = await (adminClient
+                  .from('subscriptions') as any)
+                  .insert(basicSub)
+                  .select()
+                  .single()
+                
+                if (basicSubData) {
+                  subscription = basicSubData
+                }
+              } catch (e) {
+                // Ignorar - continuar sem subscription
+              }
+            }
           }
         }
 
@@ -246,15 +278,23 @@ export async function POST(request: NextRequest) {
           }
 
           try {
+            // Verificar se tabela existe primeiro
+            const { data: tableCheck } = await (adminClient
+              .from('payments') as any)
+              .select('id')
+              .limit(1)
+              .maybeSingle()
+
+            // Se não deu erro, tabela existe - tentar inserir
             await (adminClient
               .from('payments') as any)
               .insert(basicPayment)
           } catch (paymentError: any) {
-            // Se tabela não existe (PGRST205), tentar criar registro mínimo
+            // Se tabela não existe (PGRST205), pular registro de pagamento
             if (paymentError?.code === 'PGRST205') {
               // Tabela não existe - pular registro de pagamento
             } else {
-              // Outro erro - tentar apenas com campos obrigatórios
+              // Outro erro - tentar apenas com campos obrigatórios mínimos
               try {
                 const minimalPayment = {
                   user_id: user.id,
