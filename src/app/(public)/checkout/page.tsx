@@ -396,6 +396,38 @@ export default function CheckoutPage() {
             </Card>
           </div>
         </div>
+
+        {/* Dialog de Processamento */}
+        <Dialog open={showProcessingDialog} onOpenChange={(open) => {
+          // Não permitir fechar manualmente durante processamento
+          if (!open && loading) return
+          setShowProcessingDialog(open)
+        }}>
+          <DialogContent className="sm:max-w-md" closeButton={false}>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-[#0b0c10] dark:text-white">
+                <Loader2 className="h-5 w-5 animate-spin text-[#ff5a1f]" />
+                Processando Pagamento
+              </DialogTitle>
+              <DialogDescription className="text-[#6b6b6b] dark:text-gray-400 pt-2">
+                <div className="space-y-3">
+                  <p className="font-medium text-base text-[#0b0c10] dark:text-white">
+                    Está processando...
+                  </p>
+                  <p>
+                    Vai aparecer no seu celular uma solicitação para inserir o PIN do seu {paymentMethod === 'mpesa' ? 'M-Pesa' : 'e-Mola'}.
+                  </p>
+                  <p className="text-sm">
+                    Por favor, confirme o pagamento no seu celular para continuar.
+                  </p>
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-8 w-8 animate-spin text-[#ff5a1f]" />
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
