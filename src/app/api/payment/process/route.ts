@@ -385,10 +385,11 @@ export async function POST(request: NextRequest) {
               const { sendPaymentSuccessEmail } = await import('@/lib/email')
               await sendPaymentSuccessEmail({
                 name: profile.name || user.email || 'Usuário',
-                plan: plan,
+                planName: plan,
                 amount: amountNum,
-                expiresAt: expiresAt.toISOString(),
-                transactionId: transactionId,
+                currency: 'MZN',
+                paymentDate: now.toISOString(),
+                invoiceNumber: transactionId,
                 userEmail: profile.email,
               })
             } catch (emailLibError) {
