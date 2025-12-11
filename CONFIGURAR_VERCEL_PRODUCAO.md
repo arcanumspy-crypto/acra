@@ -52,6 +52,30 @@ O domínio `arcanumspy.com` está tentando usar o Supabase, mas as variáveis de
 - **Description**: Chave da API remove.bg para remoção de background de imagens
 - **Onde obter**: https://www.remove.bg/api (criar conta e obter API key)
 
+**MPESA_ACCESS_TOKEN**
+- **Value**: `seu-token-mpesa` (JWT token da API e-Mola/M-Pesa)
+- **Environment**: Production, Preview, Development
+- **Description**: Token de acesso para pagamentos M-Pesa (Vodacom)
+- **Onde obter**: Painel da API e-Mola/M-Pesa (https://mpesaemolatech.com)
+- **Nota**: Se não configurado, será usado um token padrão (pode expirar)
+
+**EMOLA_ACCESS_TOKEN**
+- **Value**: `seu-token-emola` (JWT token da API e-Mola/M-Pesa)
+- **Environment**: Production, Preview, Development
+- **Description**: Token de acesso para pagamentos e-Mola (Movitel)
+- **Onde obter**: Painel da API e-Mola/M-Pesa (https://mpesaemolatech.com)
+- **Nota**: Se não configurado, será usado um token padrão (pode expirar)
+
+**MPESA_WALLET_ID**
+- **Value**: `993607` (padrão)
+- **Environment**: Production, Preview, Development
+- **Description**: ID da carteira M-Pesa
+
+**EMOLA_WALLET_ID**
+- **Value**: `993606` (padrão)
+- **Environment**: Production, Preview, Development
+- **Description**: ID da carteira e-Mola
+
 ### 3. Onde Obter as Credenciais do Supabase
 
 1. Acesse: https://app.supabase.com
