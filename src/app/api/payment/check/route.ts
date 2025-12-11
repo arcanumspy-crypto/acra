@@ -81,21 +81,29 @@ export async function GET(request: NextRequest) {
       new Date(subscriptionEndDate) > new Date()
     )
 
-    // Verificar perfil para has_active_subscription (PRIORIDADE MÁXIMA)
+    // Verificar perfil para has_active_subscription e role (PRIORIDADE MÁXIMA)
     let profileHasActiveSubscription = false
     let profileSubscriptionEnd = false
+    let isAdmin = false
     try {
       const { data: profile } = await (adminClient
         .from('profiles') as any)
-        .select('has_active_subscription, subscription_ends_at')
+        .select('has_active_subscription, subscription_ends_at, role')
         .eq('id', user.id)
         .single()
       
       console.log('🔍 [Payment Check] Perfil do usuário:', {
         userId: user.id,
+        role: profile?.role,
         has_active_subscription: profile?.has_active_subscription,
         subscription_ends_at: profile?.subscription_ends_at
       })
+      
+      // ADMINS TÊM ACESSO VITALÍCIO - NÃO PRECISAM DE PAGAMENTO
+      if (profile?.role === 'admin') {
+        isAdmin = true
+        console.log('✅ [Payment Check] Usuário é ADMIN - acesso vitalício concedido')
+      }
       
       // Se has_active_subscription é true, considerar ativo
       if (profile?.has_active_subscription === true) {
@@ -113,8 +121,9 @@ export async function GET(request: NextRequest) {
       console.error('❌ [Payment Check] Erro ao verificar perfil:', e)
     }
 
-    // Se o perfil indica que tem assinatura ativa, usar isso (prioridade máxima)
-    const hasActivePayment = !!(profileHasActiveSubscription || payment || hasActiveSubscription || profileSubscriptionEnd)
+    // Se o perfil indica que tem assinatura ativa OU é admin, usar isso (prioridade máxima)
+    // ADMINS SEMPRE TÊM ACESSO VITALÍCIO
+    const hasActivePayment = !!(isAdmin || profileHasActiveSubscription || payment || hasActiveSubscription || profileSubscriptionEnd)
     
     console.log('✅ [Payment Check] Resultado:', {
       hasActivePayment,

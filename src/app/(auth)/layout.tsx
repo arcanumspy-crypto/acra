@@ -25,7 +25,7 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { isAuthenticated, user, initialize, isLoading } = useAuthStore()
+  const { isAuthenticated, user, initialize, isLoading, profile } = useAuthStore()
   const router = useRouter()
   const pathname = usePathname()
   const { toast } = useToast()
@@ -165,12 +165,19 @@ export default function AuthLayout({
   }, [isAuthenticated, user, initialized, pathname]) // Adicionar pathname para verificar em cada mudança de rota
 
   // BLOQUEAR ACESSO IMEDIATAMENTE se não tem pagamento - verificar em TODAS as rotas
+  // MAS NÃO BLOQUEAR ADMINS (eles têm acesso vitalício)
   useEffect(() => {
     // Não fazer nada se ainda está verificando
     if (checkingPayment) return
     
     // Não fazer nada se não está autenticado (já será redirecionado pelo outro useEffect)
     if (!isAuthenticated || !user) return
+    
+    // ADMINS TÊM ACESSO VITALÍCIO - NÃO BLOQUEAR
+    if (profile?.role === 'admin') {
+      console.log('✅ [Layout] Usuário é ADMIN - acesso vitalício, não bloqueando')
+      return
+    }
     
     // Se não tem pagamento ativo E não está na página de checkout
     if (hasActivePayment === false && pathname && !pathname.includes('/checkout')) {
@@ -186,7 +193,7 @@ export default function AuthLayout({
         router.replace('/checkout?plan=mensal')
       }
     }
-  }, [hasActivePayment, checkingPayment, isAuthenticated, user, redirecting, router, toast, pathname])
+  }, [hasActivePayment, checkingPayment, isAuthenticated, user, redirecting, router, toast, pathname, profile])
   
   // CORREÇÃO: Mostrar loading apenas se ainda não inicializou E não passou o timeout de segurança
   // Se passou o timeout, sempre permitir renderização (mesmo que ainda esteja carregando)
@@ -204,10 +211,12 @@ export default function AuthLayout({
   }
 
   // BLOQUEAR ACESSO se não tem pagamento confirmado (exceto checkout e billing)
+  // MAS NÃO BLOQUEAR ADMINS (eles têm acesso vitalício)
   // Verificar usando pathname em vez de window.location para SSR
   const isCheckoutPage = pathname?.includes('/checkout') || pathname?.includes('/billing')
+  const isAdminUser = profile?.role === 'admin'
   
-  if (!checkingPayment && hasActivePayment === false && isAuthenticated && user && !isCheckoutPage) {
+  if (!checkingPayment && hasActivePayment === false && isAuthenticated && user && !isCheckoutPage && !isAdminUser) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center max-w-md mx-auto p-6">
