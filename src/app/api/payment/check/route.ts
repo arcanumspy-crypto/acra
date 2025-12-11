@@ -81,8 +81,9 @@ export async function GET(request: NextRequest) {
       new Date(subscriptionEndDate) > new Date()
     )
 
-    // Verificar perfil para subscription_ends_at
-    let profileSubscriptionEnd = null
+    // Verificar perfil para has_active_subscription (PRIORIDADE MÁXIMA)
+    let profileHasActiveSubscription = false
+    let profileSubscriptionEnd = false
     try {
       const { data: profile } = await (adminClient
         .from('profiles') as any)
@@ -90,14 +91,38 @@ export async function GET(request: NextRequest) {
         .eq('id', user.id)
         .single()
       
-      if (profile?.has_active_subscription && profile?.subscription_ends_at) {
-        profileSubscriptionEnd = new Date(profile.subscription_ends_at) > new Date()
+      console.log('🔍 [Payment Check] Perfil do usuário:', {
+        userId: user.id,
+        has_active_subscription: profile?.has_active_subscription,
+        subscription_ends_at: profile?.subscription_ends_at
+      })
+      
+      // Se has_active_subscription é true, considerar ativo
+      if (profile?.has_active_subscription === true) {
+        profileHasActiveSubscription = true
+        
+        // Se tem data de término, verificar se não expirou
+        if (profile?.subscription_ends_at) {
+          profileSubscriptionEnd = new Date(profile.subscription_ends_at) > new Date()
+        } else {
+          // Se não tem data mas tem has_active_subscription = true, considerar ativo
+          profileSubscriptionEnd = true
+        }
       }
     } catch (e) {
-      // Ignorar erro
+      console.error('❌ [Payment Check] Erro ao verificar perfil:', e)
     }
 
-    const hasActivePayment = !!(payment || hasActiveSubscription || profileSubscriptionEnd)
+    // Se o perfil indica que tem assinatura ativa, usar isso (prioridade máxima)
+    const hasActivePayment = !!(profileHasActiveSubscription || payment || hasActiveSubscription || profileSubscriptionEnd)
+    
+    console.log('✅ [Payment Check] Resultado:', {
+      hasActivePayment,
+      profileHasActiveSubscription,
+      hasPayment: !!payment,
+      hasSubscription: hasActiveSubscription,
+      profileSubscriptionEnd
+    })
 
     return NextResponse.json({
       hasActivePayment,
