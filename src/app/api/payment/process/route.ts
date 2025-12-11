@@ -274,6 +274,9 @@ export async function POST(request: NextRequest) {
 
         // IMPORTANTE: Atualizar perfil para ativar conta - isso é CRÍTICO
         // Mesmo se subscription/payment falhar, a conta deve ser ativada
+        let profileUpdated = false
+        
+        // Tentar atualizar com todos os campos
         try {
           const { error: profileError } = await (adminClient
             .from('profiles') as any)
@@ -284,18 +287,52 @@ export async function POST(request: NextRequest) {
             })
             .eq('id', user.id)
 
-          if (profileError) {
+          if (!profileError) {
+            profileUpdated = true
+          } else {
             // Se falhar, tentar atualizar apenas has_active_subscription
-            await (adminClient
+            const { error: simpleError } = await (adminClient
               .from('profiles') as any)
               .update({
                 has_active_subscription: true,
               })
               .eq('id', user.id)
+            
+            if (!simpleError) {
+              profileUpdated = true
+            }
           }
         } catch (profileUpdateError: any) {
-          // Se ainda falhar, tentar atualizar via API de perfil
-          // Mas não bloquear o sucesso do pagamento
+          // Se ainda falhar, tentar atualizar apenas has_active_subscription sem outros campos
+          try {
+            const { error: finalError } = await (adminClient
+              .from('profiles') as any)
+              .update({
+                has_active_subscription: true,
+              })
+              .eq('id', user.id)
+            
+            if (!finalError) {
+              profileUpdated = true
+            }
+          } catch (e) {
+            // Última tentativa falhou
+          }
+        }
+
+        // Se ainda não atualizou, tentar criar/atualizar subscription_ends_at separadamente
+        if (!profileUpdated) {
+          try {
+            // Tentar atualizar subscription_ends_at se a coluna existir
+            await (adminClient
+              .from('profiles') as any)
+              .update({
+                subscription_ends_at: expiresAt.toISOString(),
+              })
+              .eq('id', user.id)
+          } catch (e) {
+            // Ignorar se coluna não existir
+          }
         }
 
         // Enviar email de confirmação com data de término

@@ -30,10 +30,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (!user) {
-      return NextResponse.json(
-        { hasActivePayment: false },
-        { status: 401 }
-      )
+      // Retornar false em vez de 401 para não quebrar o layout
+      return NextResponse.json({
+        hasActivePayment: false,
+        hasPayment: false,
+        hasSubscription: false
+      })
     }
 
     // Verificar se tem pagamento confirmado
