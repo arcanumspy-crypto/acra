@@ -9,10 +9,11 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
-import { Check, Loader2, ArrowLeft, CreditCard, Smartphone } from "lucide-react"
+import { Check, Loader2, ArrowLeft, CreditCard, Smartphone, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { useAuthStore } from "@/store/auth-store"
 import { supabase } from "@/lib/supabase/client"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 const PLANS = {
   mensal: {
@@ -50,6 +51,7 @@ export default function CheckoutPage() {
   const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState<'plan' | 'payment'>('plan')
+  const [showProcessingDialog, setShowProcessingDialog] = useState(false)
 
   // Permitir acesso ao checkout mesmo sem autenticação (usuário pode vir do signup)
   // Mas mostrar mensagem se não estiver autenticado
@@ -131,6 +133,9 @@ export default function CheckoutPage() {
       
       console.log('✅ [Checkout] Token obtido, enviando requisição de pagamento')
 
+      // Mostrar popup de processamento
+      setShowProcessingDialog(true)
+
       // Chamar API de pagamento
       const response = await fetch('/api/payment/process', {
         method: 'POST',
@@ -152,6 +157,9 @@ export default function CheckoutPage() {
 
       const data = await response.json()
 
+      // Fechar popup de processamento
+      setShowProcessingDialog(false)
+
       if (data.success) {
         toast({
           title: "Pagamento processado!",
@@ -163,18 +171,38 @@ export default function CheckoutPage() {
           router.push('/dashboard')
         }, 2000)
       } else {
+        // Tratar erros específicos
+        let errorTitle = "Erro no pagamento"
+        let errorMessage = data.message || "Ocorreu um erro ao processar o pagamento"
+        
+        // Erro 422 = Saldo insuficiente
+        if (response.status === 422 || data.error_type === 'insufficient_balance') {
+          errorTitle = "Saldo insuficiente"
+          errorMessage = "Você não tem saldo suficiente na sua conta M-Pesa/e-Mola. Por favor, recarregue sua conta e tente novamente."
+        } else if (response.status === 401 && data.error_type === 'token_expired') {
+          errorTitle = "Token expirado"
+          errorMessage = "O token de acesso expirou. Por favor, tente novamente mais tarde ou entre em contato com o suporte."
+        } else if (response.status === 400) {
+          errorTitle = "Dados inválidos"
+          errorMessage = data.message || "Verifique os dados informados e tente novamente."
+        }
+
         toast({
-          title: "Erro no pagamento",
-          description: data.message || "Ocorreu um erro ao processar o pagamento",
+          title: errorTitle,
+          description: errorMessage,
           variant: "destructive"
         })
         setLoading(false)
       }
     } catch (error: any) {
       console.error('Erro ao processar pagamento:', error)
+      
+      // Fechar popup de processamento em caso de erro
+      setShowProcessingDialog(false)
+      
       toast({
         title: "Erro",
-        description: error.message || "Ocorreu um erro ao processar o pagamento",
+        description: error.message || "Ocorreu um erro ao processar o pagamento. Tente novamente.",
         variant: "destructive"
       })
       setLoading(false)

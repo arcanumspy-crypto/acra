@@ -313,11 +313,22 @@ export async function POST(request: NextRequest) {
           response: responseData
         })
         
-        // Mensagem específica para erro 401 (token expirado/inválido)
+        // Mensagens específicas para diferentes erros
         let errorMessage = responseData.message || responseData.error || 'Erro ao processar pagamento na API externa'
+        let errorType = 'api_external_error'
+        
         if (apiResponse.status === 401) {
           errorMessage = 'Token de acesso à API de pagamento expirado ou inválido. Por favor, entre em contato com o suporte ou tente novamente mais tarde.'
+          errorType = 'token_expired'
           console.error('🔑 [Payment API] Token da API externa inválido. Verifique:', envTokenKey)
+        } else if (apiResponse.status === 422) {
+          // Erro 422 geralmente indica saldo insuficiente ou dados inválidos
+          errorMessage = responseData.message || 'Saldo insuficiente na sua conta. Por favor, recarregue sua conta M-Pesa/e-Mola e tente novamente.'
+          errorType = 'insufficient_balance'
+          console.error('💰 [Payment API] Saldo insuficiente ou dados inválidos')
+        } else if (apiResponse.status === 400) {
+          errorMessage = responseData.message || 'Dados inválidos. Verifique o número de telefone e tente novamente.'
+          errorType = 'invalid_data'
         }
         
         return NextResponse.json(
@@ -326,7 +337,7 @@ export async function POST(request: NextRequest) {
             message: errorMessage,
             status: apiResponse.status,
             details: process.env.NODE_ENV === 'development' ? responseData : undefined,
-            error_type: apiResponse.status === 401 ? 'token_expired' : 'api_external_error'
+            error_type: errorType
           },
           { status: apiResponse.status }
         )
