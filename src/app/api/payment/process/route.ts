@@ -335,6 +335,42 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        // Verificar se a conta foi realmente ativada antes de retornar sucesso
+        let accountActivated = false
+        try {
+          const { data: verifyProfile } = await (adminClient
+            .from('profiles') as any)
+            .select('has_active_subscription, subscription_ends_at')
+            .eq('id', user.id)
+            .single()
+
+          accountActivated = verifyProfile?.has_active_subscription === true
+        } catch (e) {
+          // Se não conseguir verificar, assumir que foi ativado (já tentamos atualizar)
+          accountActivated = profileUpdated
+        }
+
+        // Se não foi ativado, tentar uma última vez
+        if (!accountActivated) {
+          try {
+            await (adminClient
+              .from('profiles') as any)
+              .update({
+                has_active_subscription: true,
+              })
+              .eq('id', user.id)
+            
+            accountActivated = true
+          } catch (e) {
+            // Se ainda falhar, retornar erro
+            return NextResponse.json({
+              success: false,
+              message: 'Pagamento processado, mas houve erro ao ativar conta. Entre em contato com suporte.',
+              transaction_id: transactionId,
+            }, { status: 500 })
+          }
+        }
+
         // Enviar email de confirmação com data de término
         try {
           const { data: profile } = await (adminClient
@@ -344,25 +380,39 @@ export async function POST(request: NextRequest) {
             .single()
 
           if (profile?.email) {
-            await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/email/payment-confirmation`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                email: profile.email,
-                name: profile.name || user.email,
+            // Enviar email diretamente usando a biblioteca de email
+            try {
+              const { sendPaymentSuccessEmail } = await import('@/lib/email')
+              await sendPaymentSuccessEmail({
+                name: profile.name || user.email || 'Usuário',
                 plan: plan,
                 amount: amountNum,
                 expiresAt: expiresAt.toISOString(),
                 transactionId: transactionId,
-              }),
-            }).catch(() => {
-              // Ignorar erro de email
-            })
+                userEmail: profile.email,
+              })
+            } catch (emailLibError) {
+              // Se falhar, tentar via API
+              await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/email/payment-confirmation`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  email: profile.email,
+                  name: profile.name || user.email,
+                  plan: plan,
+                  amount: amountNum,
+                  expiresAt: expiresAt.toISOString(),
+                  transactionId: transactionId,
+                }),
+              }).catch(() => {
+                // Ignorar erro de email - não é crítico
+              })
+            }
           }
         } catch (emailError) {
-          // Ignorar erro de email
+          // Ignorar erro de email - não é crítico para o pagamento
         }
 
         return NextResponse.json({
@@ -370,6 +420,7 @@ export async function POST(request: NextRequest) {
           transaction_id: transactionId,
           reference: responseData.reference || cleanReference,
           message: 'Pagamento processado com sucesso. Sua conta foi ativada.',
+          account_activated: accountActivated,
         })
       } else {
         // Mensagens específicas para diferentes erros

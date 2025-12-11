@@ -95,14 +95,41 @@ export async function POST(request: NextRequest) {
 </html>
     `
 
-    // Enviar email usando Resend ou outro serviço
-    // Por enquanto, apenas retornar sucesso
-    // TODO: Integrar com serviço de email real
+    // Enviar email usando Resend
+    try {
+      const { sendPaymentSuccessEmail } = await import('@/lib/email')
+      
+      const emailSent = await sendPaymentSuccessEmail({
+        name: name,
+        plan: plan,
+        amount: amount,
+        expiresAt: expiresAt,
+        transactionId: transactionId,
+        userEmail: email,
+      })
 
-    return NextResponse.json({
-      success: true,
-      message: "Email de confirmação será enviado"
-    })
+      if (!emailSent) {
+        // Se falhar, tentar enviar diretamente
+        const { sendEmail } = await import('@/lib/email/resend')
+        await sendEmail({
+          to: email,
+          subject: '✅ Pagamento Confirmado - ArcanumSpy',
+          html: htmlContent,
+        })
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: "Email de confirmação enviado"
+      })
+    } catch (emailError: any) {
+      // Se falhar, ainda retornar sucesso para não bloquear o pagamento
+      return NextResponse.json({
+        success: false,
+        message: "Email não pôde ser enviado, mas pagamento foi processado",
+        error: emailError?.message
+      })
+    }
   } catch (error: any) {
     return NextResponse.json(
       { error: "Erro ao processar email" },
