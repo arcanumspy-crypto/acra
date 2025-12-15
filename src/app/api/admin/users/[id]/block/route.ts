@@ -43,7 +43,8 @@ export async function PUT(
       .eq('id', user.id)
       .single()
 
-    if (profileError || profile?.role !== 'admin') {
+    const profileRole = profile ? (profile as unknown as { role?: string }).role : null
+    if (profileError || !profile || profileRole !== 'admin') {
       return NextResponse.json({ error: "Não autorizado. Apenas admins podem bloquear usuários." }, { status: 403 })
     }
 
@@ -74,8 +75,10 @@ export async function PUT(
       )
     }
 
+    const targetUserRole = targetUser ? (targetUser as unknown as { role?: string }).role : null
+
     // Não permitir bloquear outros admins
-    if (targetUser.role === 'admin') {
+    if (targetUserRole === 'admin') {
       return NextResponse.json(
         { error: "Não é possível bloquear usuários com role de admin" },
         { status: 400 }

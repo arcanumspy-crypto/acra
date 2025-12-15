@@ -8,6 +8,7 @@ type Plan = Database['public']['Tables']['plans']['Row']
 export interface UserWithSubscription extends Omit<Profile, 'phone_number' | 'email'> {
   email: string | null // Email from auth.users
   phone_number: string | null // Phone from profiles (mantém o tipo original)
+  has_active_subscription?: boolean // Status de pagamento/ativação
   subscription?: Subscription & { plan?: Plan }
 }
 

@@ -84,7 +84,9 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    if (upsell.user_id !== user.id) {
+    const upsellUserId = upsell ? (upsell as unknown as { user_id?: string }).user_id : null
+
+    if (upsellUserId !== user.id) {
       return NextResponse.json(
         { error: "Não autorizado" },
         { status: 403 }

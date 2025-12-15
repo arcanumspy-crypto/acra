@@ -326,7 +326,7 @@ export default function AdminUsersPage() {
                               <>
                                 {user.has_active_subscription ? (
                                   <DropdownMenuItem 
-                                    onClick={() => handleToggleBlock(user.id, false)}
+                                    onClick={() => handleToggleBlock(user.id)}
                                     className="text-red-600"
                                   >
                                     <Ban className="mr-2 h-4 w-4" />
