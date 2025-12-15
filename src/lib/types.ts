@@ -1,6 +1,6 @@
 export type UserRole = 'user' | 'admin'
 
-export type PlanType = 'free' | 'pro' | 'elite'
+export type PlanType = 'free' | 'pro'
 
 export type OfferStatus = 'active' | 'inactive'
 

@@ -53,28 +53,6 @@ export const PLANS: Plan[] = [
       'Suporte prioritário',
     ],
   },
-  {
-    id: 'elite',
-    name: 'Elite',
-    type: 'elite',
-    description: 'Acesso ilimitado',
-    priceMonthly: 99,
-    priceYearly: 990,
-    limits: {
-      offersVisible: -1, // ilimitado
-      favorites: -1,
-      categories: ['nutra', 'plr', 'ecommerce', 'bizopp', 'finance', 'crypto', 'beauty', 'sexual-health'],
-      fullAnalysis: true,
-    },
-    features: [
-      'Ofertas ilimitadas',
-      'Favoritos ilimitados',
-      'Todas as categorias',
-      'Análise completa',
-      'Suporte 24/7',
-      'Acesso antecipado a novas ofertas',
-    ],
-  },
 ]
 
 // Lista completa de países do mundo (principais)

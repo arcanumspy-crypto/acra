@@ -222,8 +222,10 @@ export default function AdminUsersPage() {
           <SelectContent>
             <SelectItem value="all">Todos os planos</SelectItem>
             <SelectItem value="free">Free</SelectItem>
-            <SelectItem value="founder">Founder</SelectItem>
-            <SelectItem value="elite">Elite</SelectItem>
+            <SelectItem value="pro">Pro</SelectItem>
+            <SelectItem value="mensal">Mensal</SelectItem>
+            <SelectItem value="trimestral">Trimestral</SelectItem>
+            <SelectItem value="anual">Anual</SelectItem>
           </SelectContent>
         </Select>
       </div>
