@@ -85,7 +85,7 @@ type PlanKey = keyof typeof PLANS
 function SignupFormContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { signup, isLoading } = useAuthStore()
+  const { signup, isLoading, user, isAuthenticated } = useAuthStore()
   const { toast } = useToast()
   
   const [step, setStep] = useState<'plan' | 'form'>('plan')
@@ -110,6 +110,12 @@ function SignupFormContent() {
   })
 
   const handlePlanSelect = () => {
+    // Se o usuário já está autenticado, ir direto para o checkout
+    if (isAuthenticated && user) {
+      router.push(`/checkout?plan=${selectedPlan}`)
+      return
+    }
+    // Se não está autenticado, seguir o fluxo normal (formulário de signup)
     setStep('form')
   }
 
@@ -229,7 +235,7 @@ function SignupFormContent() {
                 className="bg-[#ff5a1f] hover:bg-[#ff4d29] text-white rounded-full px-8 py-6 text-lg font-semibold shadow-lg"
                 size="lg"
               >
-                Continuar com {PLANS[selectedPlan].name}
+                {isAuthenticated && user ? 'Ir para Pagamento' : `Continuar com ${PLANS[selectedPlan].name}`}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <p className="mt-4 text-sm text-[#6b6b6b] dark:text-gray-400">

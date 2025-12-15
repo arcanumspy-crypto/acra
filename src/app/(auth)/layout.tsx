@@ -242,18 +242,18 @@ export default function AuthLayout({
       return
     }
     
-    // Se não tem pagamento ativo E não está na página de checkout
-    if (hasActivePayment === false && pathname && !pathname.includes('/checkout')) {
-      // Bloquear imediatamente e redirecionar
+    // Se não tem pagamento ativo E não está na página de signup/checkout
+    if (hasActivePayment === false && pathname && !pathname.includes('/signup') && !pathname.includes('/checkout')) {
+      // Bloquear imediatamente e redirecionar para escolher plano primeiro
       if (!redirecting) {
         setRedirecting(true)
         toast({
           title: "Pagamento Necessário",
-          description: "Você precisa completar o pagamento para acessar a plataforma. Escolha um plano para continuar.",
+          description: "Você precisa escolher um plano e fazer o pagamento para acessar a plataforma.",
           variant: "destructive",
           duration: 5000
         })
-        router.replace('/checkout?plan=mensal')
+        router.replace('/signup')
       }
     }
   }, [hasActivePayment, checkingPayment, isAuthenticated, user, redirecting, router, toast, pathname, profile])
@@ -273,10 +273,10 @@ export default function AuthLayout({
     )
   }
 
-  // BLOQUEAR ACESSO se não tem pagamento confirmado (exceto checkout e billing)
+  // BLOQUEAR ACESSO se não tem pagamento confirmado (exceto signup, checkout e billing)
   // MAS NÃO BLOQUEAR ADMINS (eles têm acesso vitalício)
   // Verificar usando pathname em vez de window.location para SSR
-  const isCheckoutPage = pathname?.includes('/checkout') || pathname?.includes('/billing')
+  const isCheckoutPage = pathname?.includes('/checkout') || pathname?.includes('/billing') || pathname?.includes('/signup')
   const isAdminUser = profile?.role === 'admin'
   
   if (!checkingPayment && hasActivePayment === false && isAuthenticated && user && !isCheckoutPage && !isAdminUser) {
@@ -285,10 +285,10 @@ export default function AuthLayout({
         <div className="text-center max-w-md mx-auto p-6">
           <h2 className="text-2xl font-bold mb-4">Pagamento Necessário</h2>
           <p className="text-muted-foreground mb-6">
-            Você precisa completar o pagamento para acessar a plataforma. Escolha um plano para continuar.
+            Você precisa escolher um plano e fazer o pagamento para acessar a plataforma.
           </p>
-          <Button onClick={() => router.push('/checkout?plan=mensal')} className="bg-[#ff5a1f] hover:bg-[#ff4d29]">
-            Escolher Plano e Pagar
+          <Button onClick={() => router.push('/signup')} className="bg-[#ff5a1f] hover:bg-[#ff4d29]">
+            Escolher Plano
           </Button>
         </div>
       </div>
