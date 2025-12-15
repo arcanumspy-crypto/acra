@@ -19,7 +19,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>
   signup: (email: string, password: string, name: string) => Promise<void>
   logout: () => Promise<void>
-  refreshProfile: () => Promise<void>
+  refreshProfile: (force?: boolean) => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -50,19 +50,32 @@ export const useAuthStore = create<AuthState>()(
           set({ user: null, profile: null, isAuthenticated: false, isLoading: false })
         }
         
-        // OTIMIZAÇÃO: Se já está inicializado corretamente, verificar se a sessão ainda é válida
-        // Mas SEMPRE verificar a sessão do Supabase para garantir que está sincronizado
+        // CORREÇÃO: Sempre verificar a sessão e atualizar perfil, mesmo se já tem user/profile
+        // Isso garante que o estado está sincronizado ao navegar entre páginas
         if (currentState.user && currentState.profile && !currentState.isLoading && currentState.isAuthenticated) {
-          // Verificar se a sessão ainda é válida (sem bloquear a UI)
-          supabase.auth.getSession().then(({ data, error }: { data: { session: Session | null }, error: AuthError | null }) => {
-            const session = data?.session
-            if (!session) {
+          // Verificar se a sessão ainda é válida e atualizar perfil se necessário
+          try {
+            const { data: { session }, error } = await supabase.auth.getSession()
+            if (error || !session) {
               // Sessão expirada - limpar estado
               set({ user: null, profile: null, isAuthenticated: false, isLoading: false })
+              return
             }
-          }).catch(() => {
-            // Se houver erro, manter estado atual
-          })
+            // Sempre atualizar o perfil para garantir que está sincronizado
+            // Isso resolve o problema de precisar dar refresh manual em cada seção
+            const updatedProfile = await getCurrentUserProfile(true) // Forçar carregamento
+            if (updatedProfile) {
+              set({
+                user: session.user,
+                profile: updatedProfile,
+                isAuthenticated: true,
+              })
+            }
+          } catch (e) {
+            // Se houver erro, manter estado atual mas logar
+            console.warn('⚠️ [AuthStore] Erro ao verificar sessão:', e)
+          }
+          // Retornar após atualizar - não precisa continuar com a inicialização completa
           return
         }
         
@@ -209,7 +222,30 @@ export const useAuthStore = create<AuthState>()(
               await new Promise(resolve => setTimeout(resolve, 500))
               profile = await getCurrentUserProfile()
             }
-            
+
+            // Verificar se o usuário tem pagamento ativo (exceto admin)
+            if (profile && profile.role !== 'admin') {
+              // Verificar pagamento ativo
+              const paymentCheckResponse = await fetch('/api/payment/check', {
+                credentials: 'include',
+                headers: {
+                  'Authorization': `Bearer ${data.session.access_token}`,
+                },
+                cache: 'no-store',
+              })
+
+              if (paymentCheckResponse.ok) {
+                const paymentData = await paymentCheckResponse.json()
+                
+                // Se não tem pagamento ativo, bloquear login
+                if (!paymentData.hasActivePayment && !paymentData.isAdmin) {
+                  // Fazer logout
+                  await supabase.auth.signOut()
+                  set({ isLoading: false })
+                  throw new Error('Sua conta não está ativa. Por favor, faça o pagamento para acessar a plataforma.')
+                }
+              }
+            }
             
             set({
               user: data.user,
@@ -338,7 +374,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      refreshProfile: async () => {
+      refreshProfile: async (force: boolean = false) => {
         // CORREÇÃO: Verificar se está no cliente antes de acessar window
         if (typeof window === 'undefined') {
           return
@@ -350,9 +386,9 @@ export const useAuthStore = create<AuthState>()(
         
         // Usar Map global para armazenar flags de refresh (não no estado do Zustand)
         const lastRefresh = (window as any).__lastProfileRefresh || 0
-        const REFRESH_COOLDOWN = 3000 // 3 segundos de cooldown
+        const REFRESH_COOLDOWN = force ? 0 : 2000 // Se forçado, sem cooldown; senão 2 segundos
 
-        if (now - lastRefresh < REFRESH_COOLDOWN) {
+        if (!force && now - lastRefresh < REFRESH_COOLDOWN) {
           return
         }
 
@@ -364,9 +400,10 @@ export const useAuthStore = create<AuthState>()(
         (window as any).__refreshingProfile = true
         ;(window as any).__lastProfileRefresh = now
 
-        // Verificar se já tem perfil carregado
-        if (currentState.profile && !currentState.isLoading) {
-          // Já tem perfil e não está carregando, não precisa recarregar
+        // CORREÇÃO: Se force=true, sempre recarregar, mesmo se já tem perfil
+        // Isso permite atualizar o perfil quando necessário (ex: após pagamento)
+        if (!force && currentState.profile && !currentState.isLoading) {
+          // Já tem perfil e não está carregando, não precisa recarregar (a menos que force=true)
           (window as any).__refreshingProfile = false
           return
         }

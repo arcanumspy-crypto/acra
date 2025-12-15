@@ -30,17 +30,22 @@ export async function POST(request: Request) {
     }
 
     // Preparar prompt para gerar texto de upsell
-    const prompt = `Crie um texto de upsell persuasivo que ofereça o seguinte produto complementar:
-    
-Produto Principal: ${produto_principal}
-Produto de Upsell: ${produto_upsell}
+    const prompt = `Crie um texto de upsell persuasivo e convincente que ofereça o seguinte produto complementar:
 
-O texto deve:
-- Destacar como o produto de upsell complementa o produto principal
-- Criar valor e urgência
-- Oferecer um desconto ou benefício especial
-- Ter uma chamada para ação clara e convincente
-- Ser natural e não parecer forçado`
+PRODUTO PRINCIPAL: ${produto_principal}
+PRODUTO DE UPSELL: ${produto_upsell}
+
+INSTRUÇÕES:
+1. Crie uma conexão clara entre o produto principal e o upsell, mostrando como eles se complementam
+2. Destaque os benefícios únicos e o valor agregado do produto de upsell
+3. Crie urgência e escassez de forma natural (oferta limitada, desconto especial, etc.)
+4. Inclua uma proposta de valor irresistível (desconto, bônus, garantia especial)
+5. Use uma chamada para ação (CTA) clara, direta e convincente
+6. O texto deve ser natural, persuasivo e não parecer forçado ou "vendedor demais"
+7. Use tom conversacional e que gere confiança
+8. O texto deve ter entre 150-300 palavras
+
+Formato: Texto corrido, bem estruturado, com parágrafos claros e uma CTA destacada no final.`
 
     // Usar OpenAI
     const openaiApiKey = process.env.OPENAI_API_KEY
@@ -48,8 +53,9 @@ O texto deve:
 
     if (openaiApiKey) {
       try {
-        const systemInstruction = 'Você é um especialista em vendas e marketing, especializado em criar ofertas de upsell eficazes. Crie textos persuasivos que aumentem as vendas.'
-        const fullPrompt = `${systemInstruction}\n\n${prompt}`
+        const systemInstruction = 'Você é um especialista em copywriting e vendas, com mais de 10 anos de experiência criando ofertas de upsell que convertem. Você domina técnicas de persuasão, psicologia do consumidor e criação de urgência. Seus textos são sempre naturais, convincentes e focados em valor, não em pressão de venda.'
+        
+        console.log('🤖 [Upsell] Iniciando geração com OpenAI...')
         
         const openaiResponse = await fetch(
           'https://api.openai.com/v1/chat/completions',
@@ -71,8 +77,8 @@ O texto deve:
                   content: prompt
                 }
               ],
-              temperature: 0.7,
-              max_tokens: 800,
+              temperature: 0.8,
+              max_tokens: 1000,
             })
           }
         )
@@ -80,28 +86,46 @@ O texto deve:
         if (openaiResponse.ok) {
           const openaiData = await openaiResponse.json()
           upsell = openaiData.choices?.[0]?.message?.content || null
+          if (upsell) {
+            console.log('✅ [Upsell] Gerado com sucesso via OpenAI')
+          } else {
+            console.warn('⚠️ [Upsell] OpenAI retornou resposta vazia')
+          }
         } else {
           const errorText = await openaiResponse.text()
-          console.error('Erro ao gerar upsell com OpenAI:', errorText)
+          console.error('❌ [Upsell] Erro ao gerar com OpenAI:', errorText)
         }
       } catch (error) {
-        console.error('Erro ao chamar OpenAI:', error)
+        console.error('❌ [Upsell] Erro ao chamar OpenAI:', error)
       }
+    } else {
+      console.warn('⚠️ [Upsell] OPENAI_API_KEY não configurada, usando fallback')
     }
 
     // Se não tiver resposta da API, retornar upsell de exemplo
     if (!upsell) {
-      upsell = `Oferta Especial de Upsell
+      console.log('📝 [Upsell] Usando template de fallback')
+      upsell = `🎯 Oferta Especial de Upsell
 
 Você já está adquirindo: ${produto_principal}
 
-Que tal potencializar ainda mais seus resultados com: ${produto_upsell}
+Que tal potencializar ainda mais seus resultados?
 
-Esta é uma oportunidade única de complementar sua compra com um produto que vai maximizar seus resultados.
+Agora você tem a oportunidade única de complementar sua compra com: ${produto_upsell}
 
-[Benefícios do upsell]
-[Desconto ou oferta especial]
-[Chamada para ação]`
+Esta combinação vai maximizar seus resultados e acelerar seu sucesso. É a escolha perfeita para quem quer ir além e obter resultados ainda melhores.
+
+✨ Benefícios exclusivos:
+• Complementa perfeitamente o produto principal
+• Aumenta significativamente seus resultados
+• Oferta especial disponível apenas agora
+
+💰 Oferta Limitada:
+Esta é uma oportunidade única com condições especiais que não se repetirá. Aproveite enquanto ainda está disponível.
+
+🚀 Não perca esta chance de potencializar seus resultados!
+
+[Nota: Para obter um upsell mais personalizado e persuasivo, configure a OPENAI_API_KEY nas variáveis de ambiente]`
     }
 
     // Salvar no banco se a tabela existir

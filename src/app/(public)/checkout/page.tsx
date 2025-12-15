@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,31 +18,31 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 const PLANS = {
   mensal: {
     name: "Mensal",
-    price: 1, // Preço de teste
+    price: 800,
     months: 1,
     period: "mês"
   },
   trimestral: {
     name: "Trimestral",
-    price: 1, // Preço de teste
+    price: 2160, // 800 * 3 * 0.9 (10% desconto)
     months: 3,
     period: "3 meses",
     savings: 240
   },
   anual: {
     name: "Anual",
-    price: 1, // Preço de teste
+    price: 7680, // 800 * 12 * 0.8 (20% desconto)
     months: 12,
     period: "ano",
     savings: 1920
   }
 }
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
-  const { user, isAuthenticated } = useAuthStore()
+  const { user, isAuthenticated, refreshProfile } = useAuthStore()
   
   const planParam = searchParams.get('plan') || 'mensal'
   const selectedPlan = PLANS[planParam as keyof typeof PLANS] || PLANS.mensal
@@ -168,34 +168,87 @@ export default function CheckoutPage() {
           description: "Ativando sua conta... Aguarde alguns instantes.",
         })
 
-        // Aguardar um pouco para garantir que a conta foi ativada
-        await new Promise(resolve => setTimeout(resolve, 3000))
-
-        // Verificar se conta foi ativada
+        // PASSO 1: Forçar refresh do perfil IMEDIATAMENTE após pagamento
+        console.log('🔄 [Checkout] Forçando refresh do perfil após pagamento...')
         try {
-          const checkResponse = await fetch('/api/payment/check', {
-            credentials: 'include',
-          })
-          const checkData = await checkResponse.json()
-          
-          if (checkData.hasActivePayment) {
-            toast({
-              title: "Conta ativada!",
-              description: "Sua conta foi ativada com sucesso. Redirecionando...",
-            })
-          } else {
-            toast({
-              title: "Pagamento processado",
-              description: "Aguarde alguns segundos enquanto ativamos sua conta...",
-            })
-            // Aguardar mais um pouco
-            await new Promise(resolve => setTimeout(resolve, 2000))
-          }
-        } catch (checkError) {
-          console.error('Erro ao verificar ativação:', checkError)
+          await refreshProfile(true) // Forçar refresh sem cooldown
+          console.log('✅ [Checkout] Perfil atualizado')
+        } catch (refreshError) {
+          console.error('⚠️ [Checkout] Erro ao atualizar perfil:', refreshError)
         }
 
-        // Redirecionar para dashboard
+        // PASSO 2: Aguardar um pouco para garantir que o banco foi atualizado
+        await new Promise(resolve => setTimeout(resolve, 2000))
+
+        // PASSO 3: Verificar se conta foi ativada com retry logic
+        let checkAttempts = 0
+        const maxAttempts = 5
+        let hasActivePayment = false
+
+        while (checkAttempts < maxAttempts && !hasActivePayment) {
+          try {
+            // Obter token da sessão do Supabase
+            const { data: { session } } = await supabase.auth.getSession()
+            const headers: HeadersInit = {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache',
+            }
+            
+            // Adicionar token no header se disponível
+            if (session?.access_token) {
+              headers['Authorization'] = `Bearer ${session.access_token}`
+            }
+            
+            // Forçar busca sem cache
+            const checkResponse = await fetch('/api/payment/check?' + new Date().getTime(), {
+              credentials: 'include',
+              cache: 'no-store',
+              headers
+            })
+            const checkData = await checkResponse.json()
+            
+            console.log(`🔍 [Checkout] Verificação ${checkAttempts + 1}/${maxAttempts}:`, checkData)
+            
+            if (checkData.hasActivePayment) {
+              hasActivePayment = true
+              console.log('✅ [Checkout] Conta ativada confirmada!')
+              
+              // Forçar refresh do perfil novamente para garantir
+              await refreshProfile(true)
+              
+              toast({
+                title: "Conta ativada!",
+                description: "Sua conta foi ativada com sucesso. Redirecionando...",
+              })
+              break
+            } else {
+              checkAttempts++
+              if (checkAttempts < maxAttempts) {
+                // Aguardar antes de tentar novamente
+                await new Promise(resolve => setTimeout(resolve, 1500))
+                // Forçar refresh do perfil novamente
+                await refreshProfile(true)
+              }
+            }
+          } catch (checkError) {
+            console.error(`❌ [Checkout] Erro na verificação ${checkAttempts + 1}:`, checkError)
+            checkAttempts++
+            if (checkAttempts < maxAttempts) {
+              await new Promise(resolve => setTimeout(resolve, 1500))
+            }
+          }
+        }
+
+        if (!hasActivePayment) {
+          console.warn('⚠️ [Checkout] Não foi possível confirmar ativação após várias tentativas')
+          toast({
+            title: "Pagamento processado",
+            description: "Sua conta está sendo ativada. Se o problema persistir, entre em contato com suporte.",
+            variant: "default"
+          })
+        }
+
+        // Redirecionar para dashboard (mesmo se não confirmou, o layout vai verificar novamente)
         setLoading(false)
         router.push('/dashboard')
       } else {
@@ -458,6 +511,21 @@ export default function CheckoutPage() {
         </Dialog>
       </div>
     </div>
+  )
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#f9f9f9] dark:bg-black py-12 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-[#ff5a1f] mx-auto mb-4" />
+          <p className="text-[#6b6b6b] dark:text-gray-400">Carregando...</p>
+        </div>
+      </div>
+    }>
+      <CheckoutContent />
+    </Suspense>
   )
 }
 

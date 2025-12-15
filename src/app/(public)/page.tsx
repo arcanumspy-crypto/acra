@@ -88,29 +88,15 @@ function FloatingIcons() {
 
 // Componente de animação ao scroll
 function ScrollAnimation({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "start center"]
-  })
-
-  const opacity = useTransform(scrollYProgress, [0, 0.3, 1], [0.3, 0.8, 1])
-  const y = useTransform(scrollYProgress, [0, 1], [30, 0])
-
   return (
-    <div className="relative">
-      <motion.div
-        ref={ref}
-        style={{ opacity, y }}
-        transition={{ delay, duration: 0.4 }}
-        // Fallback para garantir visibilidade no mobile
-        initial={{ opacity: 0.5 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, amount: 0.1 }}
-      >
-        {children}
-      </motion.div>
-    </div>
+    <motion.div
+      initial={{ opacity: 1, y: 0 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.1 }}
+      transition={{ delay, duration: 0.3 }}
+    >
+      {children}
+    </motion.div>
   )
 }
 
@@ -182,25 +168,13 @@ function SectionReveal({
   delay?: number
   offset?: number
 }) {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
   return (
     <motion.section
       className={clsx("relative", className)}
-      initial={mounted ? { opacity: 0, y: offset } : { opacity: 1, y: 0 }}
+      initial={{ opacity: 1, y: 0 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.05, margin: "-50px 0px" }}
-      transition={{ duration: 0.5, delay, ease: "easeOut" }}
-      style={{
-        // Garantir que a seção tenha conteúdo visível
-        willChange: "opacity, transform",
-        // Fallback para garantir visibilidade no mobile
-        minHeight: "1px",
-      }}
+      viewport={{ once: true, amount: 0.01 }}
+      transition={{ duration: 0.3, delay, ease: "easeOut" }}
     >
       {children}
     </motion.section>
@@ -853,7 +827,7 @@ export default function HomePage() {
                 features: [
                   "Tudo do plano Mensal",
                   "20% de desconto",
-                  "Economia de 1.920 MT",
+                  "Economia de 2.4 MT",
                   "Pagamento anual",
                   "Suporte prioritário",
                   "Acesso a recursos beta"

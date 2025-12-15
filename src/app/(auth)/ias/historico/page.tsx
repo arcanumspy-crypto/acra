@@ -17,7 +17,8 @@ import {
   Loader2,
   Download,
   Eye,
-  EyeOff
+  EyeOff,
+  ShoppingCart
 } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { useToast } from "@/components/ui/use-toast"
@@ -58,16 +59,28 @@ interface Transcricao {
   created_at: string
 }
 
+interface Upsell {
+  id: string
+  produto_principal: string
+  produto_upsell: string
+  texto: string
+  created_at: string
+}
+
 export default function HistoricoPage() {
   const [copies, setCopies] = useState<CopyCriativa[]>([])
   const [transcricoes, setTranscricoes] = useState<Transcricao[]>([])
+  const [upsells, setUpsells] = useState<Upsell[]>([])
   const [loading, setLoading] = useState(true)
   const [searchCopy, setSearchCopy] = useState("")
   const [searchTranscricao, setSearchTranscricao] = useState("")
+  const [searchUpsell, setSearchUpsell] = useState("")
   const [selectedCopy, setSelectedCopy] = useState<CopyCriativa | null>(null)
   const [selectedTranscricao, setSelectedTranscricao] = useState<Transcricao | null>(null)
+  const [selectedUpsell, setSelectedUpsell] = useState<Upsell | null>(null)
   const [openCopyDialog, setOpenCopyDialog] = useState(false)
   const [openTranscricaoDialog, setOpenTranscricaoDialog] = useState(false)
+  const [openUpsellDialog, setOpenUpsellDialog] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -77,7 +90,7 @@ export default function HistoricoPage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      await Promise.all([loadCopies(), loadTranscricoes()])
+      await Promise.all([loadCopies(), loadTranscricoes(), loadUpsells()])
     } catch (error) {
       console.error('Erro ao carregar dados:', error)
     } finally {
@@ -128,6 +141,29 @@ export default function HistoricoPage() {
       }
     } catch (error) {
       console.error('Erro ao carregar transcrições:', error)
+    }
+  }
+
+  const loadUpsells = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const response = await fetch('/api/ias/upsells', {
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setUpsells(data.upsells || [])
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar upsells:', error)
     }
   }
 
@@ -197,6 +233,39 @@ export default function HistoricoPage() {
     }
   }
 
+  const handleDeleteUpsell = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este upsell?')) return
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const response = await fetch(`/api/ias/upsells?id=${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Sucesso",
+          description: "Upsell excluído com sucesso",
+        })
+        loadUpsells()
+      } else {
+        throw new Error('Erro ao excluir upsell')
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir o upsell",
+        variant: "destructive"
+      })
+    }
+  }
+
   const handleCopyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text)
     toast({
@@ -228,6 +297,12 @@ export default function HistoricoPage() {
     transcricao.texto_transcrito.toLowerCase().includes(searchTranscricao.toLowerCase())
   )
 
+  const filteredUpsells = upsells.filter(upsell =>
+    upsell.produto_principal.toLowerCase().includes(searchUpsell.toLowerCase()) ||
+    upsell.produto_upsell.toLowerCase().includes(searchUpsell.toLowerCase()) ||
+    upsell.texto.toLowerCase().includes(searchUpsell.toLowerCase())
+  )
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
@@ -243,20 +318,24 @@ export default function HistoricoPage() {
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white break-words">
-              Histórico de Copys e Transcrições
+              Histórico de IA
             </h1>
             <p className="text-gray-400 text-sm md:text-base">
-              Visualize e gerencie todas as suas copys geradas e transcrições de áudio
+              Visualize e gerencie todas as suas copys, upsells e transcrições geradas
             </p>
           </div>
         </div>
       </div>
 
       <Tabs defaultValue="copies" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-[#1a1a1a] border-[#2a2a2a]">
+        <TabsList className="grid w-full grid-cols-3 bg-[#1a1a1a] border-[#2a2a2a]">
           <TabsTrigger value="copies" className="data-[state=active]:bg-[#ff5a1f]">
             <Type className="h-4 w-4 mr-2" />
             Copys ({copies.length})
+          </TabsTrigger>
+          <TabsTrigger value="upsells" className="data-[state=active]:bg-[#ff5a1f]">
+            <ShoppingCart className="h-4 w-4 mr-2" />
+            Upsells ({upsells.length})
           </TabsTrigger>
           <TabsTrigger value="transcricoes" className="data-[state=active]:bg-[#ff5a1f]">
             <FileAudio className="h-4 w-4 mr-2" />
@@ -337,6 +416,87 @@ export default function HistoricoPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleDeleteCopy(copy.id)}
+                        className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="upsells" className="space-y-4">
+          <div className="flex gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Buscar por produto principal, upsell ou texto..."
+                value={searchUpsell}
+                onChange={(e) => setSearchUpsell(e.target.value)}
+                className="pl-10 bg-[#0a0a0a] border-[#2a2a2a] text-white"
+              />
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-[#ff5a1f]" />
+            </div>
+          ) : filteredUpsells.length === 0 ? (
+            <Card className="bg-[#1a1a1a] border-[#2a2a2a]">
+              <CardContent className="py-12 text-center">
+                <ShoppingCart className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+                <p className="text-gray-400">
+                  {searchUpsell ? "Nenhum upsell encontrado" : "Nenhum upsell gerado ainda"}
+                </p>
+                {!searchUpsell && (
+                  <p className="text-gray-500 text-sm mt-2">
+                    Gere seu primeiro upsell usando o Gerador de Upsell
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {filteredUpsells.map((upsell) => (
+                <Card key={upsell.id} className="bg-[#1a1a1a] border-[#2a2a2a] hover:border-[#ff5a1f]/50 transition-colors">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-white text-lg line-clamp-2">{upsell.produto_principal}</CardTitle>
+                        <CardDescription className="text-gray-400 text-sm mt-1 line-clamp-1">
+                          Upsell: {upsell.produto_upsell}
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-4">
+                      <Calendar className="h-3 w-3" />
+                      <span>
+                        {format(new Date(upsell.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedUpsell(upsell)
+                          setOpenUpsellDialog(true)
+                        }}
+                        className="flex-1 border-[#2a2a2a] text-white hover:bg-[#2a2a2a]"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Ver
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteUpsell(upsell.id)}
                         className="border-red-500/50 text-red-400 hover:bg-red-500/10"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -605,6 +765,55 @@ export default function HistoricoPage() {
                     <p className="text-gray-500">Criado em</p>
                     <p className="text-white">
                       {format(new Date(selectedTranscricao.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para visualizar Upsell */}
+      <Dialog open={openUpsellDialog} onOpenChange={setOpenUpsellDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-[#1a1a1a] border-[#2a2a2a]">
+          <DialogHeader>
+            <DialogTitle className="text-white">{selectedUpsell?.produto_principal}</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Upsell: {selectedUpsell?.produto_upsell}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedUpsell && (
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => handleCopyToClipboard(selectedUpsell.texto, "Upsell")}
+                  className="border-[#2a2a2a] text-white hover:bg-[#2a2a2a]"
+                >
+                  <CopyIcon className="h-4 w-4 mr-2" />
+                  Copiar Texto
+                </Button>
+              </div>
+              <div className="bg-[#0a0a0a] border border-[#2a2a2a] rounded-lg p-4 min-h-[200px] max-h-[500px] overflow-y-auto">
+                <p className="text-white whitespace-pre-wrap leading-relaxed">
+                  {selectedUpsell.texto}
+                </p>
+              </div>
+              <div className="pt-4 border-t border-[#2a2a2a]">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500">Produto Principal</p>
+                    <p className="text-white">{selectedUpsell.produto_principal}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Produto de Upsell</p>
+                    <p className="text-white">{selectedUpsell.produto_upsell}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Criado em</p>
+                    <p className="text-white">
+                      {format(new Date(selectedUpsell.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                     </p>
                   </div>
                 </div>

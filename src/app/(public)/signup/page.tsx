@@ -51,28 +51,28 @@ const PLANS = {
   },
   trimestral: {
     name: "Trimestral",
-    price: 2160,
+    price: 2.7,
     months: 3,
     period: "3 meses",
     description: "Economize 10% com o plano trimestral",
-    savings: 240,
+    savings: 0.3,
     features: [
       "Tudo do plano mensal",
-      "Economia de 240 MT",
+      "Economia de 0.3 MT",
       "Suporte prioritário",
       "Atualizações antecipadas"
     ]
   },
   anual: {
     name: "Anual",
-    price: 7680,
+    price: 9.6,
     months: 12,
     period: "ano",
     description: "Melhor custo-benefício - Economize 20%",
-    savings: 1920,
+    savings: 2.4,
     features: [
       "Tudo do plano trimestral",
-      "Economia de 1.920 MT",
+      "Economia de 2.4 MT",
       "Suporte 24/7",
       "Acesso beta a novas funcionalidades",
       "Consultoria mensal gratuita"
