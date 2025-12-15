@@ -74,3 +74,8 @@ COMMENT ON COLUMN transcricoes_audio.confianca IS 'Nível de confiança da trans
 COMMENT ON COLUMN transcricoes_audio.palavras IS 'Array JSON com palavras, timestamps e confiança individual';
 COMMENT ON COLUMN transcricoes_audio.modelo IS 'Modelo do Deepgram usado (nova-2, nova, base)';
 
+
+
+
+
+

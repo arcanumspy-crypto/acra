@@ -241,6 +241,7 @@ export async function PUT(request: NextRequest) {
     if (emoji !== undefined) updateData.emoji = emoji
     if (is_premium !== undefined) updateData.is_premium = is_premium
     
+    const adminClient = createAdminClient()
     const { data: category, error } = await adminClient
       .from('categories')
       .update(updateData as never)

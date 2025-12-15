@@ -61,3 +61,8 @@ DELETE FROM tarefas;
 2. Você verá a mensagem "Nenhuma lista criada ainda"
 3. Clique em "Criar Primeira Lista" para começar do zero
 
+
+
+
+
+

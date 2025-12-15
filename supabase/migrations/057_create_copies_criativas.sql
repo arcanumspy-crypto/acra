@@ -78,3 +78,8 @@ COMMENT ON TABLE copies_criativas IS 'Armazena copys geradas pelo Gerador de Cop
 COMMENT ON COLUMN copies_criativas.style IS 'Estilo da copy (Agressivo, Neutro, Storytelling, etc.)';
 COMMENT ON COLUMN copies_criativas.creative_type IS 'Tipo de criativo (Criativo curto, Script UGC, etc.)';
 
+
+
+
+
+

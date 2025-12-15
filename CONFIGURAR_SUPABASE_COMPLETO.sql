@@ -94,9 +94,9 @@ CREATE INDEX IF NOT EXISTS idx_subscriptions_trial_ends_at ON subscriptions(tria
 -- ============================================
 INSERT INTO plans (name, slug, description, price_monthly_cents, is_active)
 VALUES 
-  ('Mensal', 'mensal', 'Plano mensal - 800 MT', 80000, true),
-  ('Trimestral', 'trimestral', 'Plano trimestral - 2160 MT (10% desconto)', 72000, true),
-  ('Anual', 'anual', 'Plano anual - 7680 MT (20% desconto)', 64000, true)
+  ('Mensal', 'mensal', 'Plano mensal - 1 MT', 100, true),
+  ('Trimestral', 'trimestral', 'Plano trimestral - 2.7 MT (10% desconto)', 90, true),
+  ('Anual', 'anual', 'Plano anual - 9.6 MT (20% desconto)', 80, true)
 ON CONFLICT (slug) DO UPDATE
 SET 
   name = EXCLUDED.name,
@@ -186,4 +186,9 @@ ORDER BY column_name;
 -- ============================================
 -- Agora você pode usar o sistema de pagamento.
 -- Certifique-se de que SUPABASE_SERVICE_ROLE_KEY está configurado no Vercel.
+
+
+
+
+
 

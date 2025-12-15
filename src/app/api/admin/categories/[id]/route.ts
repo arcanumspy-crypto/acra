@@ -64,7 +64,6 @@ export async function PUT(
     const body = await request.json()
     const { name, slug, description, emoji, is_premium } = body
 
-    const adminClient = createAdminClient()
     const updateData: {
       name?: string
       slug?: string
@@ -81,7 +80,7 @@ export async function PUT(
     const { data: category, error } = await adminClient
       .from('categories')
       .update(updateData as never)
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .select()
       .single()
 

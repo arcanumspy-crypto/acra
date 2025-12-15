@@ -45,3 +45,8 @@ WHERE tablename = 'offers' AND policyname = 'Authenticated users can view active
 -- SET LOCAL request.jwt.claim.sub TO '994f3619-15b8-4748-9393-215da0ec1b0b';
 -- SELECT COUNT(*) FROM offers WHERE is_active = true;
 
+
+
+
+
+

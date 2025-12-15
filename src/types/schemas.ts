@@ -33,3 +33,8 @@ export type OfferBasic = {
   [key: string]: any // Para campos opcionais adicionais
 }
 
+
+
+
+
+

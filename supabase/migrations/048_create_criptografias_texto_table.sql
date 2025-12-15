@@ -38,3 +38,8 @@ COMMENT ON COLUMN public.criptografias_texto.usar_criptografia IS 'Indica se a c
 
 
 
+
+
+
+
+

@@ -33,3 +33,8 @@ ORDER BY created_at DESC;
 --   COUNT(*) FILTER (WHERE is_active = true) as ofertas_ativas
 -- FROM offers;
 
+
+
+
+
+

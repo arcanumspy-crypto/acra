@@ -71,3 +71,8 @@ Se ainda houver erro, verifique:
 3. **Verificar logs do servidor**
    - O console do Next.js mostrará logs detalhados do erro
 
+
+
+
+
+

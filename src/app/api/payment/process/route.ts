@@ -176,304 +176,326 @@ export async function POST(request: NextRequest) {
       })
       
       if (isSuccess) {
-        console.log('✅ [Payment API] Pagamento bem-sucedido (status 200), ativando conta IMEDIATAMENTE...')
         const transactionId = responseData.transaction_id || 
                               responseData.reference || 
                               responseData.id || 
                               responseData.transactionId ||
                               cleanReference
 
-        // ATIVAR CONTA IMEDIATAMENTE - PRIORIDADE MÁXIMA
         const adminClient = createAdminClient()
         const now = new Date()
         const expiresAt = new Date()
         expiresAt.setDate(expiresAt.getDate() + (months * 30))
-        
-        // PASSO 1: ATIVAR CONTA NO PERFIL PRIMEIRO (mais importante)
-        console.log('🚀 [Payment API] Ativando conta no perfil...')
-        try {
-          const { error: profileError } = await (adminClient
-            .from('profiles') as any)
-            .update({
-              has_active_subscription: true,
-              subscription_ends_at: expiresAt.toISOString(),
-              updated_at: now.toISOString(),
-            })
-            .eq('id', user.id)
 
-          if (profileError) {
-            console.error('❌ [Payment API] Erro ao ativar perfil:', profileError)
-            // Tentar apenas has_active_subscription
-            await (adminClient
-              .from('profiles') as any)
-              .update({
-                has_active_subscription: true,
-              })
-              .eq('id', user.id)
-          } else {
-            console.log('✅ [Payment API] Conta ativada no perfil com sucesso!')
-          }
-        } catch (profileErr: any) {
-          console.error('❌ [Payment API] Erro crítico ao ativar perfil:', profileErr)
-          // Tentar uma última vez apenas com has_active_subscription
-          try {
-            await (adminClient
-              .from('profiles') as any)
-              .update({
-                has_active_subscription: true,
-              })
-              .eq('id', user.id)
-            console.log('✅ [Payment API] Conta ativada (tentativa final)')
-          } catch (finalErr) {
-            console.error('❌ [Payment API] Falha total ao ativar conta:', finalErr)
-          }
+        // 1. ATIVAR CONTA NO PERFIL (VERIFICAR SE FUNCIONOU)
+        const { error: profileError, data: updatedProfile } = await (adminClient.from('profiles') as any)
+          .update({
+            has_active_subscription: true,
+            subscription_ends_at: expiresAt.toISOString(),
+          })
+          .eq('id', user.id)
+          .select('id, has_active_subscription')
+          .single()
+
+        if (profileError) {
+          console.error('❌ [Payment API] ERRO ao ativar perfil:', profileError)
+          return NextResponse.json({
+            success: false,
+            message: 'Erro ao ativar conta. Entre em contato com suporte.',
+            transaction_id: transactionId,
+            error: profileError.message
+          }, { status: 500 })
         }
 
-        // Buscar ou criar plan_id (usar um plano padrão se não existir)
-        let planId: string | null = null
-        
-        const { data: defaultPlan } = await (adminClient
+        if (!updatedProfile || updatedProfile.has_active_subscription !== true) {
+          console.error('❌ [Payment API] Perfil não foi atualizado corretamente')
+          return NextResponse.json({
+            success: false,
+            message: 'Erro ao ativar conta. Entre em contato com suporte.',
+            transaction_id: transactionId
+          }, { status: 500 })
+        }
+
+        // 2. BUSCAR PLAN_ID
+        const { data: planData, error: planError } = await (adminClient
           .from('plans') as any)
           .select('id')
           .eq('is_active', true)
           .limit(1)
           .maybeSingle()
 
-        planId = defaultPlan?.id || null
-
-        // Criar subscription usando apenas campos que existem na tabela original
-        let subscription: any = null
-        
-        // Garantir que temos um plan_id
-        if (!planId) {
-          const { data: defaultPlanData } = await (adminClient
-            .from('plans') as any)
-            .select('id')
-            .eq('is_active', true)
-            .limit(1)
-            .maybeSingle()
-          planId = defaultPlanData?.id || null
+        if (planError || !planData) {
+          console.error('❌ [Payment API] Erro ao buscar plano:', planError)
+          // Continuar mesmo sem planId - o importante é ativar a conta
         }
 
+        const planId = planData?.id
+
+        // 3. CRIAR/ATUALIZAR SUBSCRIPTION (OBRIGATÓRIO)
+        let subscriptionCreated = false
         if (planId) {
-          const subscriptionData: any = {
-            user_id: user.id,
-            plan_id: planId,
+          console.log('🔍 [Payment API] Tentando criar/atualizar subscription:', {
+            userId: user.id,
+            planId: planId,
             status: 'active',
             started_at: now.toISOString(),
-            current_period_end: expiresAt.toISOString(),
-          }
+            current_period_end: expiresAt.toISOString()
+          })
 
-          try {
-            // Verificar se tabela existe primeiro
-            const { data: tableCheck } = await (adminClient
-              .from('subscriptions') as any)
-              .select('id')
-              .limit(1)
-              .maybeSingle()
+          // Primeiro verificar se já existe
+          const { data: existingSub } = await (adminClient.from('subscriptions') as any)
+            .select('id, status')
+            .eq('user_id', user.id)
+            .maybeSingle()
 
-            // Se não deu erro, tabela existe - tentar upsert
-            const { data: subData, error: subError } = await (adminClient
-              .from('subscriptions') as any)
-              .upsert(subscriptionData, { onConflict: 'user_id' })
-              .select()
+          let subData: any = null
+          let subError: any = null
+
+          if (existingSub) {
+            // Atualizar existente
+            console.log('🔄 [Payment API] Subscription já existe, atualizando:', existingSub.id)
+            const result = await (adminClient.from('subscriptions') as any)
+              .update({
+                plan_id: planId,
+                status: 'active',
+                started_at: now.toISOString(),
+                current_period_end: expiresAt.toISOString(),
+                updated_at: now.toISOString(),
+              })
+              .eq('id', existingSub.id)
+              .select('id, status, user_id')
               .single()
-
-            if (!subError && subData) {
-              subscription = subData
-            } else if (subError?.code === 'PGRST205') {
-              // Tabela não existe - pular criação de subscription
-            }
-          } catch (err: any) {
-            // Se erro for de tabela não encontrada, continuar
-            if (err?.code !== 'PGRST205') {
-              // Outro erro - tentar criar subscription básica
-              try {
-                const basicSub = {
-                  user_id: user.id,
-                  plan_id: planId,
-                  status: 'active',
-                  started_at: now.toISOString(),
-                  current_period_end: expiresAt.toISOString(),
-                }
-                const { data: basicSubData } = await (adminClient
-                  .from('subscriptions') as any)
-                  .insert(basicSub)
-                  .select()
-                  .single()
-                
-                if (basicSubData) {
-                  subscription = basicSubData
-                }
-              } catch (e) {
-                // Ignorar - continuar sem subscription
-              }
-            }
-          }
-        }
-
-        // Registrar pagamento (usar estrutura básica que existe em todas as versões)
-        if (planId) {
-          // Estrutura básica que funciona em ambas as migrations
-          const basicPayment: any = {
-            user_id: user.id,
-            plan_id: planId,
-            amount_cents: Math.round(amountNum * 100),
-            currency: 'MZN',
-            status: 'completed',
-            paid_at: now.toISOString(),
-          }
-
-          // Adicionar campos opcionais se existirem
-          if (subscription?.id) {
-            basicPayment.subscription_id = subscription.id
-          }
-
-          // Tentar adicionar campos extras (podem não existir)
-          try {
-            basicPayment.provider = method === 'mpesa' ? 'mpesa' : 'emola'
-            basicPayment.external_id = transactionId
-            basicPayment.period_start = now.toISOString()
-            basicPayment.period_end = expiresAt.toISOString()
-          } catch (e) {
-            // Ignorar se campos não existem
-          }
-
-          try {
-            // Verificar se tabela existe primeiro
-            const { data: tableCheck } = await (adminClient
-              .from('payments') as any)
-              .select('id')
-              .limit(1)
-              .maybeSingle()
-
-            // Se não deu erro, tabela existe - tentar inserir
-            await (adminClient
-              .from('payments') as any)
-              .insert(basicPayment)
-          } catch (paymentError: any) {
-            // Se tabela não existe (PGRST205), pular registro de pagamento
-            if (paymentError?.code === 'PGRST205') {
-              // Tabela não existe - pular registro de pagamento
-            } else {
-              // Outro erro - tentar apenas com campos obrigatórios mínimos
-              try {
-                const minimalPayment = {
-                  user_id: user.id,
-                  plan_id: planId,
-                  amount_cents: Math.round(amountNum * 100),
-                  currency: 'MZN',
-                  status: 'completed',
-                  paid_at: now.toISOString(),
-                }
-                await (adminClient.from('payments') as any).insert(minimalPayment)
-              } catch (e) {
-                // Ignorar se ainda falhar - o importante é ativar a conta
-              }
-            }
-          }
-        }
-
-        // IMPORTANTE: Atualizar perfil para ativar conta - isso é CRÍTICO
-        // Mesmo se subscription/payment falhar, a conta deve ser ativada
-        let profileUpdated = false
-        
-        // Tentar atualizar com todos os campos
-        try {
-          const { error: profileError } = await (adminClient
-            .from('profiles') as any)
-            .update({
-              has_active_subscription: true,
-              subscription_ends_at: expiresAt.toISOString(),
-              updated_at: now.toISOString(),
-            })
-            .eq('id', user.id)
-
-          if (!profileError) {
-            profileUpdated = true
+            
+            subData = result.data
+            subError = result.error
           } else {
-            // Se falhar, tentar atualizar apenas has_active_subscription
-            const { error: simpleError } = await (adminClient
-              .from('profiles') as any)
-              .update({
-                has_active_subscription: true,
+            // Criar nova
+            console.log('➕ [Payment API] Criando nova subscription')
+            const result = await (adminClient.from('subscriptions') as any)
+              .insert({
+                user_id: user.id,
+                plan_id: planId,
+                status: 'active',
+                started_at: now.toISOString(),
+                current_period_end: expiresAt.toISOString(),
               })
-              .eq('id', user.id)
+              .select('id, status, user_id')
+              .single()
             
-            if (!simpleError) {
-              profileUpdated = true
-            }
+            subData = result.data
+            subError = result.error
           }
-        } catch (profileUpdateError: any) {
-          // Se ainda falhar, tentar atualizar apenas has_active_subscription sem outros campos
-          try {
-            const { error: finalError } = await (adminClient
-              .from('profiles') as any)
-              .update({
-                has_active_subscription: true,
-              })
-              .eq('id', user.id)
-            
-            if (!finalError) {
-              profileUpdated = true
-            }
-          } catch (e) {
-            // Última tentativa falhou
-          }
-        }
 
-        // Se ainda não atualizou, tentar criar/atualizar subscription_ends_at separadamente
-        if (!profileUpdated) {
-          try {
-            // Tentar atualizar subscription_ends_at se a coluna existir
-            await (adminClient
-              .from('profiles') as any)
-              .update({
-                subscription_ends_at: expiresAt.toISOString(),
-              })
-              .eq('id', user.id)
-          } catch (e) {
-            // Ignorar se coluna não existir
-          }
-        }
-
-        // Verificar se a conta foi realmente ativada antes de retornar sucesso
-        let accountActivated = false
-        try {
-          const { data: verifyProfile } = await (adminClient
-            .from('profiles') as any)
-            .select('has_active_subscription, subscription_ends_at')
-            .eq('id', user.id)
-            .single()
-
-          accountActivated = verifyProfile?.has_active_subscription === true
-        } catch (e) {
-          // Se não conseguir verificar, assumir que foi ativado (já tentamos atualizar)
-          accountActivated = profileUpdated
-        }
-
-        // Se não foi ativado, tentar uma última vez
-        if (!accountActivated) {
-          try {
-            await (adminClient
-              .from('profiles') as any)
-              .update({
-                has_active_subscription: true,
-              })
-              .eq('id', user.id)
-            
-            accountActivated = true
-          } catch (e) {
-            // Se ainda falhar, retornar erro
+          if (subError) {
+            console.error('❌ [Payment API] ERRO ao criar/atualizar subscription:', {
+              error: subError,
+              code: subError?.code,
+              message: subError?.message,
+              details: subError?.details,
+              hint: subError?.hint
+            })
             return NextResponse.json({
               success: false,
-              message: 'Pagamento processado, mas houve erro ao ativar conta. Entre em contato com suporte.',
+              message: 'Erro ao criar assinatura. Entre em contato com suporte.',
               transaction_id: transactionId,
+              error: subError.message
             }, { status: 500 })
           }
+          
+          if (subData && subData.status === 'active') {
+            subscriptionCreated = true
+            console.log('✅ [Payment API] Subscription criada/atualizada com SUCESSO:', {
+              id: subData.id,
+              status: subData.status,
+              user_id: subData.user_id
+            })
+          } else {
+            console.error('❌ [Payment API] Subscription não foi criada corretamente:', subData)
+          }
+        } else {
+          console.warn('⚠️ [Payment API] PlanId não encontrado, pulando subscription')
         }
 
-        // Enviar email de confirmação com data de término
+        // 4. CRIAR PAGAMENTO (OBRIGATÓRIO)
+        let paymentCreated = false
+        if (planId) {
+          console.log('🔍 [Payment API] Tentando criar payment:', {
+            userId: user.id,
+            planId: planId,
+            amount_cents: Math.round(amountNum * 100),
+            transaction_id: transactionId
+          })
+
+          const { data: paymentData, error: paymentError } = await (adminClient.from('payments') as any)
+            .insert({
+              user_id: user.id,
+              plan_id: planId,
+              amount_cents: Math.round(amountNum * 100),
+              currency: 'MZN',
+              status: 'completed',
+              paid_at: now.toISOString(),
+              transaction_id: transactionId,
+              period_start: now.toISOString(),
+              period_end: expiresAt.toISOString(),
+            })
+            .select('id, status, user_id, transaction_id')
+            .single()
+
+          if (paymentError) {
+            console.error('❌ [Payment API] ERRO ao criar payment:', {
+              error: paymentError,
+              code: paymentError?.code,
+              message: paymentError?.message,
+              details: paymentError?.details,
+              hint: paymentError?.hint
+            })
+            
+            // Se erro de duplicata, tentar buscar
+            if (paymentError.code === '23505') { // Unique violation
+              const { data: existingPayment } = await (adminClient.from('payments') as any)
+                .select('id, status')
+                .eq('user_id', user.id)
+                .eq('transaction_id', transactionId)
+                .maybeSingle()
+              
+              if (existingPayment) {
+                paymentCreated = true
+                console.log('✅ [Payment API] Payment já existe:', existingPayment.id)
+              } else {
+                return NextResponse.json({
+                  success: false,
+                  message: 'Erro ao registrar pagamento. Entre em contato com suporte.',
+                  transaction_id: transactionId,
+                  error: paymentError.message
+                }, { status: 500 })
+              }
+            } else {
+              return NextResponse.json({
+                success: false,
+                message: 'Erro ao registrar pagamento. Entre em contato com suporte.',
+                transaction_id: transactionId,
+                error: paymentError.message
+              }, { status: 500 })
+            }
+          } else if (paymentData && paymentData.status === 'completed') {
+            paymentCreated = true
+            console.log('✅ [Payment API] Payment criado com SUCESSO:', {
+              id: paymentData.id,
+              status: paymentData.status,
+              user_id: paymentData.user_id,
+              transaction_id: paymentData.transaction_id
+            })
+          } else {
+            console.error('❌ [Payment API] Payment não foi criado corretamente:', paymentData)
+          }
+        } else {
+          console.warn('⚠️ [Payment API] PlanId não encontrado, pulando payment')
+        }
+
+        // 5. VERIFICAR FINAL: Confirmar que TUDO foi criado/ativado
+        const { data: finalCheck, error: checkError } = await (adminClient
+          .from('profiles') as any)
+          .select('has_active_subscription, subscription_ends_at')
+          .eq('id', user.id)
+          .single()
+
+        if (checkError || !finalCheck || finalCheck.has_active_subscription !== true) {
+          console.error('❌ [Payment API] Verificação final do perfil falhou:', checkError)
+          return NextResponse.json({
+            success: false,
+            message: 'Erro ao confirmar ativação da conta. Entre em contato com suporte.',
+            transaction_id: transactionId
+          }, { status: 500 })
+        }
+
+        // 6. VERIFICAR FINAL: Buscar TUDO do banco para confirmar
+        console.log('🔍 [Payment API] ========== VERIFICAÇÃO FINAL DO BANCO ==========')
+        
+        // Verificar perfil
+        const { data: verifyProfile, error: verifyProfileError } = await (adminClient
+          .from('profiles') as any)
+          .select('id, has_active_subscription, subscription_ends_at')
+          .eq('id', user.id)
+          .single()
+
+        console.log('🔍 [Payment API] Perfil no banco:', {
+          exists: !!verifyProfile,
+          has_active_subscription: verifyProfile?.has_active_subscription,
+          error: verifyProfileError?.message
+        })
+
+        // Verificar payment
+        let verifyPayment: any = null
+        if (planId) {
+          const { data: paymentFromDb, error: paymentError } = await (adminClient.from('payments') as any)
+            .select('id, status, user_id, transaction_id')
+            .eq('user_id', user.id)
+            .eq('transaction_id', transactionId)
+            .maybeSingle()
+
+          verifyPayment = paymentFromDb
+          console.log('🔍 [Payment API] Payment no banco:', {
+            exists: !!verifyPayment,
+            id: verifyPayment?.id,
+            status: verifyPayment?.status,
+            transaction_id: verifyPayment?.transaction_id,
+            error: paymentError?.message
+          })
+        }
+
+        // Verificar subscription
+        let verifySub: any = null
+        if (planId) {
+          const { data: subFromDb, error: subError } = await (adminClient.from('subscriptions') as any)
+            .select('id, status, user_id, plan_id')
+            .eq('user_id', user.id)
+            .maybeSingle()
+
+          verifySub = subFromDb
+          console.log('🔍 [Payment API] Subscription no banco:', {
+            exists: !!verifySub,
+            id: verifySub?.id,
+            status: verifySub?.status,
+            user_id: verifySub?.user_id,
+            plan_id: verifySub?.plan_id,
+            error: subError?.message
+          })
+        }
+
+        // Verificar se tudo está OK
+        const perfilOk = verifyProfile?.has_active_subscription === true
+        const paymentOk = planId ? (!!verifyPayment && ['completed', 'confirmed', 'paid'].includes(verifyPayment.status)) : true
+        const subscriptionOk = planId ? (!!verifySub && verifySub.status === 'active') : true
+
+        const tudoAtivado = perfilOk && paymentOk && subscriptionOk
+
+        console.log('🔍 [Payment API] Resultado da verificação:', {
+          perfilOk,
+          paymentOk,
+          subscriptionOk,
+          tudoAtivado
+        })
+        console.log('🔍 [Payment API] ================================================')
+
+        if (!tudoAtivado) {
+          console.error('❌ [Payment API] VERIFICAÇÃO FALHOU! Nem tudo foi ativado:', {
+            perfilOk,
+            paymentOk,
+            subscriptionOk
+          })
+          return NextResponse.json({
+            success: false,
+            message: 'Alguns dados não foram ativados corretamente. Entre em contato com suporte.',
+            transaction_id: transactionId,
+            verificacoes: {
+              perfil: perfilOk,
+              payment: paymentOk,
+              subscription: subscriptionOk
+            }
+          }, { status: 500 })
+        }
+
+        // Enviar email (opcional, não bloqueia)
         try {
           const { data: profile } = await (adminClient
             .from('profiles') as any)
@@ -482,51 +504,29 @@ export async function POST(request: NextRequest) {
             .single()
 
           if (profile?.email) {
-            // Enviar email diretamente usando a biblioteca de email
-            try {
-              const { sendPaymentSuccessEmail } = await import('@/lib/email')
-              await sendPaymentSuccessEmail({
-                name: profile.name || user.email || 'Usuário',
-                planName: plan,
+            fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/email/payment-confirmation`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: profile.email,
+                name: profile.name || user.email,
+                plan: plan,
                 amount: amountNum,
-                currency: 'MZN',
-                paymentDate: now.toISOString(),
-                invoiceNumber: transactionId,
                 expiresAt: expiresAt.toISOString(),
-                userEmail: profile.email,
-              })
-            } catch (emailLibError) {
-              // Se falhar, tentar via API
-              await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/email/payment-confirmation`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  email: profile.email,
-                  name: profile.name || user.email,
-                  plan: plan,
-                  amount: amountNum,
-                  expiresAt: expiresAt.toISOString(),
-                  transactionId: transactionId,
-                }),
-              }).catch(() => {
-                // Ignorar erro de email - não é crítico
-              })
-            }
+                transactionId: transactionId,
+              }),
+            }).catch(() => {}) // Ignorar erro de email
           }
-        } catch (emailError) {
-          // Ignorar erro de email - não é crítico para o pagamento
+        } catch (e) {
+          // Ignorar erro de email
         }
-
-        console.log('✅ [Payment API] Retornando sucesso. Conta ativada:', accountActivated)
         
         return NextResponse.json({
           success: true,
           transaction_id: transactionId,
           reference: responseData.reference || cleanReference,
           message: 'Pagamento processado com sucesso. Sua conta foi ativada.',
-          account_activated: accountActivated,
+          account_activated: true,
         }, { status: 200 })
       } else {
         // Mensagens específicas para diferentes erros

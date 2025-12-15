@@ -39,3 +39,8 @@ SELECT COUNT(*) AS listas_restantes FROM tarefa_listas;
 -- OU
 -- DELETE FROM tarefas; -- Deleta TODAS as tarefas
 
+
+
+
+
+

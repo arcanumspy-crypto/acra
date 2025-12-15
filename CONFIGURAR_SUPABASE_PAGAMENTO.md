@@ -44,13 +44,32 @@ Se alguma tabela não existir, execute a migration `COMPLETE_SETUP.sql` ou `001_
 
 Execute este SQL para criar os planos:
 
+**OPÇÃO 1: Planos Elite e Founder (recomendado)**
+```sql
+-- Criar planos Elite e Founder
+INSERT INTO "public"."plans" 
+  ("id", "name", "slug", "description", "price_monthly_cents", "max_offers_visible", "max_favorites", "is_active", "created_at") 
+VALUES 
+  ('4ba2e498-8c3d-4d7d-8b53-7753c3a82fe7', 'Elite', 'elite', 'Acesso completo e ilimitado', 19700, null, null, true, NOW()),
+  ('cf007f5a-0ec8-46ed-a6e2-4544709e2974', 'Founder', 'founder', 'Para quem está começando a escalar', 14700, 200, null, true, NOW())
+ON CONFLICT (slug) DO UPDATE
+SET 
+  name = EXCLUDED.name,
+  description = EXCLUDED.description,
+  price_monthly_cents = EXCLUDED.price_monthly_cents,
+  max_offers_visible = EXCLUDED.max_offers_visible,
+  max_favorites = EXCLUDED.max_favorites,
+  is_active = EXCLUDED.is_active;
+```
+
+**OPÇÃO 2: Planos Mensal, Trimestral e Anual (alternativa)**
 ```sql
 -- Criar planos
 INSERT INTO plans (name, slug, description, price_monthly_cents, is_active)
 VALUES 
-  ('Mensal', 'mensal', 'Plano mensal - 800 MT', 80000, true),
-  ('Trimestral', 'trimestral', 'Plano trimestral - 2160 MT (10% desconto)', 72000, true),
-  ('Anual', 'anual', 'Plano anual - 7680 MT (20% desconto)', 64000, true)
+  ('Mensal', 'mensal', 'Plano mensal - 1 MT', 100, true),
+  ('Trimestral', 'trimestral', 'Plano trimestral - 2.7 MT (10% desconto)', 90, true),
+  ('Anual', 'anual', 'Plano anual - 9.6 MT (20% desconto)', 80, true)
 ON CONFLICT (slug) DO UPDATE
 SET 
   name = EXCLUDED.name,
@@ -59,7 +78,9 @@ SET
   is_active = EXCLUDED.is_active;
 ```
 
-**Nota:** Os valores estão em centavos (800 MT = 80000 centavos)
+**Nota:** 
+- Os valores estão em centavos (1 MT = 100 centavos)
+- O arquivo `CRIAR_PLANOS.sql` contém o script completo para criar os planos Elite e Founder
 
 ### 4. ✅ Configurar Políticas RLS (Row Level Security)
 
@@ -197,4 +218,9 @@ Se tiver problemas, verifique:
 - Logs do Supabase: Dashboard → Logs
 - Logs da API: Console do navegador (F12)
 - Estrutura das tabelas: SQL Editor → Verificar colunas
+
+
+
+
+
 

@@ -41,3 +41,8 @@ export const DEFAULT_OPTIONS: TranscriptionOptions = {
   utterances: false
 }
 
+
+
+
+
+

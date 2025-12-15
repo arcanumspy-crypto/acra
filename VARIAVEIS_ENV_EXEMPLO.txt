@@ -11,3 +11,7 @@ FISH_AUDIO_API_URL=https://api.fish.audio
 # Obtenha sua chave em: https://platform.openai.com/api-keys
 OPENAI_API_KEY=sua_openai_api_key_aqui
 
+# Remove.bg API (server-side apenas - NUNCA expor no frontend!)
+# Obtenha sua chave em: https://www.remove.bg/api
+REMOVE_BG_API_KEY=YJJtmqPiybM2pM1zcXAveJ4P
+

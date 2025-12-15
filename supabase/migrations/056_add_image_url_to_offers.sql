@@ -13,3 +13,8 @@ CREATE INDEX IF NOT EXISTS idx_offers_image_url ON offers(image_url) WHERE image
 -- Comentário
 COMMENT ON COLUMN offers.image_url IS 'URL da imagem da oferta (armazenada no Supabase Storage)';
 
+
+
+
+
+

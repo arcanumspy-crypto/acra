@@ -223,3 +223,8 @@ if (!apiResponse.ok) {
 4. ✅ Adicionar retry logic para falhas temporárias
 5. ✅ Validar resposta da API antes de criar subscription
 
+
+
+
+
+

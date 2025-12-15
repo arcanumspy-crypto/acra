@@ -73,8 +73,15 @@ export function MobileMenu() {
             </div>
 
             {/* Conteúdo do Menu */}
-            <div className="flex-1 overflow-y-auto overscroll-contain" style={{ backgroundColor: '#0a0a0a', overflow: 'visible' }}>
-              <div className="p-3" style={{ display: 'flex', flexDirection: 'column', width: '100%', overflow: 'visible', backgroundColor: 'transparent' }}>
+            <div 
+              className="flex-1 overflow-y-auto overscroll-contain" 
+              style={{ 
+                backgroundColor: '#0a0a0a',
+                WebkitOverflowScrolling: 'touch',
+                touchAction: 'pan-y'
+              }}
+            >
+              <div className="p-3" style={{ display: 'flex', flexDirection: 'column', width: '100%', backgroundColor: 'transparent' }}>
                 <Sidebar
                   className="flex w-full border-0 bg-transparent"
                   onNavigate={closeMenu}

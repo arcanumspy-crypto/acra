@@ -68,3 +68,8 @@ git push origin main
 
 O token é necessário porque o repositório pertence à organização `arcanumspy-crypto` e requer autenticação especial.
 
+
+
+
+
+

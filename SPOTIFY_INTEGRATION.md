@@ -207,3 +207,8 @@ O sistema inclui logs detalhados:
 - [Web Playback SDK](https://developer.spotify.com/documentation/web-playback-sdk)
 - [Authorization Code Flow](https://developer.spotify.com/documentation/general/guides/authorization/code-flow/)
 
+
+
+
+
+

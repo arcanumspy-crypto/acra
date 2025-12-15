@@ -4,11 +4,14 @@ import { removeBackground } from "@/lib/remove-bg"
 
 export async function POST(request: NextRequest) {
   try {
-    // CORREÇÃO: Validar REMOVE_BG_API_KEY antes de processar
+    // Validar REMOVE_BG_API_KEY - se não tiver, retornar erro amigável (não crítico)
     if (!process.env.REMOVE_BG_API_KEY) {
-      console.error('❌ REMOVE_BG_API_KEY não configurada')
+      // Não logar como erro crítico, apenas aviso
       return NextResponse.json(
-        { error: "Serviço de remoção de background não configurado" },
+        { 
+          error: "Funcionalidade de remoção de background não está disponível no momento",
+          code: "SERVICE_UNAVAILABLE"
+        },
         { status: 503 }
       )
     }

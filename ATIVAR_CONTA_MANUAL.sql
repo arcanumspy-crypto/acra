@@ -84,3 +84,8 @@ AND NOT EXISTS (
   AND paid_at > NOW() - INTERVAL '1 hour'
 );
 
+
+
+
+
+

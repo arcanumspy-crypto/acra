@@ -47,3 +47,8 @@ Esses erros 404 são comuns em desenvolvimento do Next.js e geralmente são reso
 - ✅ Estrutura HTML correta
 - ⚠️ Servidor precisa ser reiniciado para gerar os chunks
 
+
+
+
+
+

@@ -40,3 +40,8 @@ WHERE u.email = 'seu-email@exemplo.com';
 --   WHERE email = 'admin@arcanumspy.com'
 -- );
 
+
+
+
+
+

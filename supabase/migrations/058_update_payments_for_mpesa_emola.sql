@@ -117,3 +117,8 @@ CREATE INDEX IF NOT EXISTS idx_payments_method ON payments(method);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id_status ON subscriptions(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_trial_ends_at ON subscriptions(trial_ends_at);
 
+
+
+
+
+

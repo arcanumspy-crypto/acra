@@ -100,3 +100,8 @@ Após configurar as variáveis e fazer o deploy, verifique:
 - Variáveis `NEXT_PUBLIC_*` são incluídas no bundle do cliente
 - Variáveis sem `NEXT_PUBLIC_` são apenas server-side e não são expostas ao cliente
 
+
+
+
+
+

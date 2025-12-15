@@ -17,3 +17,8 @@ SELECT
   COUNT(*) FILTER (WHERE is_active = false) as ofertas_inativas
 FROM offers;
 
+
+
+
+
+

@@ -129,6 +129,7 @@ export default function AuthLayout({
   }, [])
 
   // Verificar se usuário tem pagamento confirmado - SEMPRE que mudar de rota
+  // CORREÇÃO: Também atualizar o perfil ao mudar de rota para garantir dados atualizados
   useEffect(() => {
     const checkPayment = async () => {
       if (!user || !isAuthenticated) {
@@ -137,16 +138,78 @@ export default function AuthLayout({
         return
       }
 
+      // CORREÇÃO: Forçar refresh do perfil ao mudar de rota para garantir dados atualizados
+      // Isso resolve o problema de precisar dar refresh manual em cada seção
+      const { refreshProfile } = useAuthStore.getState()
       try {
-        const response = await fetch('/api/payment/check', {
+        await refreshProfile(true) // Forçar refresh mesmo se já tem perfil
+      } catch (e) {
+        console.warn('⚠️ [Layout] Erro ao atualizar perfil:', e)
+      }
+
+      try {
+        // Obter token da sessão do Supabase
+        const { data: { session } } = await supabase.auth.getSession()
+        const headers: HeadersInit = {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+        }
+        
+        // Adicionar token no header se disponível
+        if (session?.access_token) {
+          headers['Authorization'] = `Bearer ${session.access_token}`
+        }
+        
+        // Forçar busca sem cache - adicionar timestamp para evitar cache
+        const response = await fetch('/api/payment/check?' + new Date().getTime(), {
           credentials: 'include',
-          cache: 'no-store', // Não usar cache para garantir dados atualizados
+          cache: 'no-store',
+          headers
         })
         
         if (response.ok) {
           const data = await response.json()
           console.log('🔍 [Layout] Verificação de pagamento:', data)
-          setHasActivePayment(data.hasActivePayment || false)
+          
+          // Se retornou true, confirmar
+          if (data.hasActivePayment === true) {
+            setHasActivePayment(true)
+            console.log('✅ [Layout] Pagamento ativo confirmado')
+          } else {
+            // Se retornou false, verificar novamente após um delay (pode ser timing)
+            setHasActivePayment(false)
+            console.log('⚠️ [Layout] Pagamento não ativo ainda')
+            
+            // Se acabou de vir do checkout, dar mais uma chance
+            if (pathname === '/dashboard') {
+              setTimeout(async () => {
+                try {
+                  // Obter token da sessão para retry
+                  const { data: { session } } = await supabase.auth.getSession()
+                  const retryHeaders: HeadersInit = {}
+                  if (session?.access_token) {
+                    retryHeaders['Authorization'] = `Bearer ${session.access_token}`
+                  }
+                  
+                  const retryResponse = await fetch('/api/payment/check?' + new Date().getTime(), {
+                    credentials: 'include',
+                    cache: 'no-store',
+                    headers: retryHeaders
+                  })
+                  const retryData = await retryResponse.json()
+                  if (retryData.hasActivePayment === true) {
+                    console.log('✅ [Layout] Pagamento confirmado na segunda tentativa')
+                    setHasActivePayment(true)
+                    // Forçar refresh do perfil
+                    const { refreshProfile: refreshProfileFn } = useAuthStore.getState()
+                    await refreshProfileFn(true)
+                  }
+                } catch (e) {
+                  // Ignorar erro na retry
+                }
+              }, 2000)
+            }
+          }
         } else {
           console.warn('⚠️ [Layout] Erro ao verificar pagamento:', response.status)
           setHasActivePayment(false)
@@ -302,16 +365,25 @@ function ProfileDropdown() {
     setMounted(true)
   }, [])
 
-  // OTIMIZAÇÃO: Carregar perfil apenas uma vez quando necessário
+  // CORREÇÃO: Carregar perfil quando necessário, mas permitir refresh forçado
   useEffect(() => {
-    if (!user?.id || profile) return
+    if (!user?.id) return
 
-    // Debounce para evitar múltiplas chamadas
-    const timer = setTimeout(() => {
-      refreshProfile().catch(() => {
+    // Se não tem perfil, carregar imediatamente
+    if (!profile) {
+      refreshProfile(true).catch(() => {
         // Ignorar erros silenciosamente
       })
-    }, 500) // Aumentar delay para evitar chamadas rápidas
+      return
+    }
+
+    // Se já tem perfil, ainda assim fazer um refresh suave (sem forçar) para garantir atualização
+    // Mas com debounce para evitar múltiplas chamadas
+    const timer = setTimeout(() => {
+      refreshProfile(false).catch(() => {
+        // Ignorar erros silenciosamente
+      })
+    }, 1000) // Delay menor para atualização mais rápida
 
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -43,3 +43,8 @@ WHERE user_id = auth.uid();
 -- Se você também quiser deletar as tarefas que estavam nas listas:
 -- DELETE FROM tarefas WHERE user_id = auth.uid() AND lista_id IS NOT NULL;
 
+
+
+
+
+

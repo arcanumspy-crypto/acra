@@ -43,3 +43,8 @@ FROM offers;
 -- 5. Ver todas as ofertas (como admin, bypassa RLS)
 SELECT id, title, is_active, created_at FROM offers ORDER BY created_at DESC;
 
+
+
+
+
+

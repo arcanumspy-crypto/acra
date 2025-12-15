@@ -24,3 +24,8 @@ Write-Host "✅ Arquivos TypeScript temporários removidos" -ForegroundColor Gre
 Write-Host "`n✅ Limpeza completa!" -ForegroundColor Green
 Write-Host "Agora execute: npm run dev" -ForegroundColor Cyan
 
+
+
+
+
+

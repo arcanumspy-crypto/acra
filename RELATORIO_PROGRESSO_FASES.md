@@ -107,3 +107,8 @@
 - Padrão de migração estabelecido e documentado
 - 2 componentes migrados com sucesso (sem warnings)
 
+
+
+
+
+

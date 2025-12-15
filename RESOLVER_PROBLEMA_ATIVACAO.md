@@ -86,3 +86,8 @@ O sistema agora:
 2. Execute o script de ativação manual para o usuário
 3. Teste um novo pagamento para verificar se funciona
 
+
+
+
+
+

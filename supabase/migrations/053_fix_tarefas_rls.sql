@@ -58,3 +58,8 @@ CREATE POLICY "Users can delete their own tarefas"
 -- FIM DA MIGRATION
 -- ============================================
 
+
+
+
+
+

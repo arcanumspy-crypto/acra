@@ -101,10 +101,12 @@ export async function POST(request: NextRequest) {
       
       const emailSent = await sendPaymentSuccessEmail({
         name: name,
-        plan: plan,
+        planName: plan || 'Plano',
         amount: amount,
+        currency: 'MZN',
+        paymentDate: new Date().toISOString(),
         expiresAt: expiresAt,
-        transactionId: transactionId,
+        invoiceNumber: transactionId,
         userEmail: email,
       })
 

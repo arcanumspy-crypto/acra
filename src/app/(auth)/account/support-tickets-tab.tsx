@@ -252,7 +252,7 @@ export function SupportTicketsTab() {
           <div className="text-center py-8 text-muted-foreground">
             <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Você ainda não tem tickets de suporte.</p>
-            <p className="text-sm mt-2">Clique em "Novo Ticket" para criar um.</p>
+            <p className="text-sm mt-2">Clique em &quot;Novo Ticket&quot; para criar um.</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -378,4 +378,9 @@ export function SupportTicketsTab() {
     </Card>
   )
 }
+
+
+
+
+
 

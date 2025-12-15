@@ -57,3 +57,8 @@ CREATE POLICY "Users can delete own spotify tokens"
   FOR DELETE
   USING (auth.uid() = user_id);
 
+
+
+
+
+

@@ -215,13 +215,18 @@ export function Sidebar({ className, onNavigate }: SidebarProps = {}) {
         opacity: 1,
         position: 'relative' as const,
         zIndex: 1,
-        overflow: 'visible',
         height: 'auto',
         minHeight: 'auto',
         backgroundColor: 'transparent'
       } : undefined}
     >
-      <div className={cn("flex-1 p-2 md:p-4 space-y-1", isMobileMenu ? "overflow-visible" : "overflow-y-auto")}>
+      <div 
+        className={cn("flex-1 p-2 md:p-4 space-y-1", "overflow-y-auto")}
+        style={isMobileMenu ? {
+          WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-y'
+        } : undefined}
+      >
         {navItems
           .filter((item) => {
             // Verificação rigorosa

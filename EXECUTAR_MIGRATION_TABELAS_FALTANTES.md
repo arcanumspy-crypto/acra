@@ -85,3 +85,8 @@ Se encontrar erros:
 
 Se os erros persistirem, verifique os logs do SQL Editor para mais detalhes.
 
+
+
+
+
+

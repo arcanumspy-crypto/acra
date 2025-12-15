@@ -155,3 +155,8 @@ A plataforma foi transformada de **lenta e com loops infinitos** para **rápida 
 
 
 
+
+
+
+
+

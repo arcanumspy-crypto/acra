@@ -80,3 +80,8 @@ No terminal onde o Next.js está rodando, você verá logs detalhados como:
 
 Isso ajudará a identificar o problema exato.
 
+
+
+
+
+

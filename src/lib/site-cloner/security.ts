@@ -109,3 +109,8 @@ export function validateSize(currentSize: number, maxSize: number = 100 * 1024 *
   return currentSize <= maxSize
 }
 
+
+
+
+
+
