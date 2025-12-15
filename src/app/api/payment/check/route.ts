@@ -248,8 +248,10 @@ export async function GET(request: NextRequest) {
             console.log('✅ [Payment Check] Assinatura válida até:', endDate.toISOString())
           } else {
             console.log('⚠️ [Payment Check] Assinatura expirada em:', endDate.toISOString())
-            // Mesmo expirada, se has_active_subscription = true, considerar ativo
-            profileSubscriptionEnd = true
+            // Se expirou, NÃO considerar ativo (mesmo que has_active_subscription = true)
+            profileSubscriptionEnd = false
+            // IMPORTANTE: Se expirou, marcar has_active_subscription como false no perfil
+            profileHasActiveSubscription = false
           }
         } else {
           // Se não tem data mas tem has_active_subscription = true, considerar ativo
@@ -275,13 +277,14 @@ export async function GET(request: NextRequest) {
     if (isAdmin) {
       hasActivePayment = true
       console.log('✅ [Payment Check] ADMIN - acesso vitalício')
-    } else if (profileHasActiveSubscription === true) {
-      // Se o perfil tem has_active_subscription = true, considerar ativo
+    } else if (profileHasActiveSubscription === true && profileSubscriptionEnd === true) {
+      // Se o perfil tem has_active_subscription = true E não expirou, considerar ativo
       hasActivePayment = true
-      console.log('✅ [Payment Check] PERFIL ATIVO - has_active_subscription = true')
-    } else if (profileSubscriptionEnd === true) {
-      hasActivePayment = true
-      console.log('✅ [Payment Check] PERFIL ATIVO - subscription válida')
+      console.log('✅ [Payment Check] PERFIL ATIVO - has_active_subscription = true e não expirado')
+    } else if (profileHasActiveSubscription === true && profileSubscriptionEnd === false) {
+      // Se tem has_active_subscription = true mas expirou, considerar inativo
+      hasActivePayment = false
+      console.log('⚠️ [Payment Check] PERFIL EXPIRADO - has_active_subscription = true mas data expirada')
     } else if (payment && ['completed', 'confirmed', 'paid'].includes(payment.status)) {
       hasActivePayment = true
       console.log('✅ [Payment Check] PAYMENT ATIVO')

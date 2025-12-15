@@ -389,9 +389,10 @@ function ProfileDropdown() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]) // Apenas quando user.id mudar
 
-  const handleLogout = async () => {
-    await logout()
+  const handleLogout = () => {
+    // LOGOUT IMEDIATO: Redirecionar primeiro, logout em background
     router.push('/login')
+    logout() // Não esperar, fazer em background
   }
 
   return (

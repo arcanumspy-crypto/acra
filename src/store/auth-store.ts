@@ -362,16 +362,17 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: async () => {
-        try {
-          await supabase.auth.signOut()
-          set({
-            user: null,
-            profile: null,
-            isAuthenticated: false,
-          })
-        } catch (error) {
-          console.error('Error logging out:', error)
-        }
+        // LOGOUT IMEDIATO: Limpar estado primeiro, depois fazer signOut
+        set({
+          user: null,
+          profile: null,
+          isAuthenticated: false,
+        })
+        
+        // Fazer signOut em background (não esperar)
+        supabase.auth.signOut().catch((error) => {
+          console.error('Error signing out:', error)
+        })
       },
 
       refreshProfile: async (force: boolean = false) => {

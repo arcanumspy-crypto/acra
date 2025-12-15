@@ -291,8 +291,13 @@ export default function AccountPage() {
       // CORREÇÃO: Obter email atual do user ou profile
       const currentEmail = user.email || ""
       
-      // Update email in auth.users if changed
+      // BLOQUEAR alteração de email para usuários normais (apenas admins podem alterar)
       if (data.email && data.email !== currentEmail) {
+        if (profile?.role !== 'admin') {
+          throw new Error('A alteração de email não está disponível para usuários normais. Entre em contato com o suporte se necessário.')
+        }
+        
+        // Update email in auth.users if changed (apenas para admins)
         const { error: emailError } = await supabase.auth.updateUser({
           email: data.email
         })
@@ -307,13 +312,19 @@ export default function AccountPage() {
       }
 
       // Update profile in Supabase (name and email)
-      // CORREÇÃO: Sempre atualizar email no profile, mesmo que não tenha mudado
+      // CORREÇÃO: Atualizar email no profile apenas se for admin ou se não mudou
+      const profileUpdate: any = { 
+        name: data.name || user.user_metadata?.name || user.email?.split('@')[0] || 'User'
+      }
+      
+      // Apenas atualizar email no profile se for admin ou se não mudou
+      if (profile?.role === 'admin' || !data.email || data.email === currentEmail) {
+        profileUpdate.email = data.email || user.email || ""
+      }
+      
       const { error } = await supabase
         .from('profiles')
-        .update({ 
-          name: data.name || user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-          email: data.email || user.email || ""
-        })
+        .update(profileUpdate)
         .eq('id', user.id)
       
       if (error) {
@@ -496,6 +507,7 @@ export default function AccountPage() {
                       id="email"
                       type="email"
                       {...profileForm.register("email")}
+                      disabled={profile?.role !== 'admin'}
                       placeholder={user?.email || "seu@email.com"}
                     />
                   )}
@@ -507,60 +519,95 @@ export default function AccountPage() {
                   <p className="text-xs text-muted-foreground">
                     {user?.email 
                       ? `Email atual: ${user?.email}` 
-                      : "Você pode alterar seu email. Um link de confirmação será enviado para o novo endereço."}
+                      : "Email não definido"}
+                    {profile?.role !== 'admin' && (
+                      <span className="block mt-1 text-amber-600 dark:text-amber-400">
+                        A alteração de email não está disponível para usuários normais. Entre em contato com o suporte se necessário.
+                      </span>
+                    )}
                   </p>
                 </div>
 
                 {/* Plano Atual */}
                 <div className="space-y-2 pt-4 border-t">
                   <Label>Plano Atual</Label>
-                  {loadingSubscription ? (
-                    <p className="text-sm text-muted-foreground">Carregando...</p>
-                  ) : currentSubscription?.plan ? (
-                    <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
-                      <div className="flex-1">
-                        <p className="font-semibold">{currentSubscription.plan.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Intl.NumberFormat(locale, { style: 'currency', currency }).format(currentSubscription.plan.price_monthly_cents / 100)}/mês
-                        </p>
-                        {(profile as any)?.subscription_ends_at && (
-                          <p className="text-xs text-[#ff5a1f] mt-1 font-medium">
-                            Expira em: {new Date((profile as any).subscription_ends_at).toLocaleDateString('pt-BR', {
-                              day: '2-digit',
-                              month: 'long',
-                              year: 'numeric'
-                            })}
-                          </p>
-                        )}
-                        {currentSubscription.current_period_end && (
-                          <p className="text-xs text-[#ff5a1f] mt-1 font-medium">
-                            Expira em: {new Date(currentSubscription.current_period_end).toLocaleDateString('pt-BR', {
-                              day: '2-digit',
-                              month: 'long',
-                              year: 'numeric'
-                            })}
-                          </p>
-                        )}
+                  {(() => {
+                    // Verificar se tem subscription ativa ou dados do profile
+                    const subscriptionEndsAt = (profile as any)?.subscription_ends_at
+                    const hasActiveSubscription = profile?.has_active_subscription
+                    const isExpired = subscriptionEndsAt ? new Date(subscriptionEndsAt) < new Date() : false
+                    
+                    // Se está carregando e não tem dados ainda
+                    if (loadingSubscription && !currentSubscription && !subscriptionEndsAt) {
+                      return (
+                        <div className="p-3 rounded-lg border bg-muted/50">
+                          <Skeleton className="h-4 w-32 mb-2" />
+                          <Skeleton className="h-3 w-24" />
+                        </div>
+                      )
+                    }
+                    
+                    // Se tem subscription ativa ou dados do profile
+                    if (currentSubscription?.plan || (hasActiveSubscription && subscriptionEndsAt)) {
+                      const plan = currentSubscription?.plan
+                      const planName = plan?.name || 'Plano Ativo'
+                      const planPrice = plan?.price_monthly_cents ? (plan.price_monthly_cents / 100) : null
+                      const expirationDate = subscriptionEndsAt || currentSubscription?.current_period_end
+                      
+                      return (
+                        <div className={`flex items-center justify-between p-3 rounded-lg border ${isExpired ? 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800' : 'bg-muted/50'}`}>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold">{planName}</p>
+                              {isExpired && (
+                                <Badge variant="destructive" className="text-xs">Expirado</Badge>
+                              )}
+                            </div>
+                            {planPrice && (
+                              <p className="text-sm text-muted-foreground">
+                                {new Intl.NumberFormat(locale, { style: 'currency', currency }).format(planPrice)}/mês
+                              </p>
+                            )}
+                            {expirationDate && (
+                              <p className={`text-xs mt-1 font-medium ${isExpired ? 'text-red-600 dark:text-red-400' : 'text-[#ff5a1f]'}`}>
+                                {isExpired ? 'Expirou em: ' : 'Expira em: '}
+                                {new Date(expirationDate).toLocaleDateString('pt-BR', {
+                                  day: '2-digit',
+                                  month: 'long',
+                                  year: 'numeric'
+                                })}
+                              </p>
+                            )}
+                            {isExpired && (
+                              <p className="text-xs text-red-600 dark:text-red-400 mt-2 font-medium">
+                                Sua assinatura expirou. Renove para continuar acessando a plataforma.
+                              </p>
+                            )}
+                          </div>
+                          <Link href={isExpired ? "/signup" : "/billing"}>
+                            <Button variant={isExpired ? "default" : "outline"} size="sm" className={isExpired ? "bg-[#ff5a1f] hover:bg-[#ff4d29]" : ""}>
+                              {isExpired ? "Renovar Assinatura" : "Gerenciar"}
+                            </Button>
+                          </Link>
+                        </div>
+                      )
+                    }
+                    
+                    // Sem assinatura ativa
+                    return (
+                      <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
+                        <div>
+                          <p className="font-semibold">Sem Assinatura Ativa</p>
+                          <p className="text-sm text-muted-foreground">Escolha um plano para começar</p>
+                        </div>
+                        <Link href="/signup">
+                          <Button variant="outline" size="sm">
+                            Ver Planos
+                          </Button>
+                        </Link>
                       </div>
-                      <Link href="/billing">
-                        <Button variant="outline" size="sm">
-                          Gerenciar
-                        </Button>
-                      </Link>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
-                      <div>
-                        <p className="font-semibold">Plano Gratuito</p>
-                        <p className="text-sm text-muted-foreground">Sem assinatura ativa</p>
-                      </div>
-                      <Link href="/pricing">
-                        <Button variant="outline" size="sm">
-                          Ver Planos
-                        </Button>
-                      </Link>
-                    </div>
-                  )}
+                    )
+                  })()}
                 </div>
 
                 <Button type="submit" disabled={isLoading}>
