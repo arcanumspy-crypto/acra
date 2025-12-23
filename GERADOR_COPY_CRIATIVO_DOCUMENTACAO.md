@@ -579,3 +579,5 @@ const response = await fetch('/api/ias/gerador-copy-criativo', {
 
 
 
+
+

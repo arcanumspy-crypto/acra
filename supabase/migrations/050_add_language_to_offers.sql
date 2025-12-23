@@ -21,3 +21,5 @@ CREATE INDEX IF NOT EXISTS idx_offers_language ON offers(language);
 
 
 
+
+

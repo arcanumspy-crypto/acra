@@ -255,3 +255,5 @@ Use o switch "Usar Criptografia Unicode" para ativar/desativar
 
 
 
+
+

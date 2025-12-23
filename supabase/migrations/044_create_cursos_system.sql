@@ -282,3 +282,5 @@ CREATE POLICY "Admins can delete aulas"
 
 
 
+
+

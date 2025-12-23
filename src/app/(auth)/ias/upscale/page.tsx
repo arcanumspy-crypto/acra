@@ -85,7 +85,8 @@ export default function UpscalePage() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || data.details || 'Erro ao fazer upscale')
+        const errorMsg = data.error || data.details || data.message || 'Erro ao fazer upscale'
+        throw new Error(errorMsg)
       }
 
       if (data.success && data.imageUrl) {
@@ -94,8 +95,15 @@ export default function UpscalePage() {
           title: "Sucesso",
           description: "Upscale concluído com sucesso!",
         })
+      } else if (data.imageUrl) {
+        // Se tiver imageUrl mesmo sem success: true, usar
+        setResultUrl(data.imageUrl)
+        toast({
+          title: "Sucesso",
+          description: "Upscale concluído com sucesso!",
+        })
       } else {
-        throw new Error('Resposta inválida do servidor')
+        throw new Error(data.message || data.error || 'Resposta inválida do servidor')
       }
     } catch (error: any) {
       console.error('Erro ao fazer upscale:', error)

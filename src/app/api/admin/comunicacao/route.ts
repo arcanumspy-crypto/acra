@@ -92,22 +92,46 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar perfis com subscriptions (para obter informações do plano)
-    const { data: profilesRaw, error: profilesError } = await adminClient
-      .from('profiles')
-      .select(`
-        id, 
-        name,
-        subscriptions(
-          plan:plans(name, slug)
-        )
-      `)
-      .in('id', userIds)
+    // Tentar buscar com subscriptions primeiro, se falhar, buscar sem
+    let profilesRaw: any = null
+    let profilesError: any = null
+    
+    try {
+      const result = await adminClient
+        .from('profiles')
+        .select(`
+          id, 
+          name,
+          subscriptions(
+            plan:plans(name, slug)
+          )
+        `)
+        .in('id', userIds)
+      
+      profilesRaw = result.data
+      profilesError = result.error
+    } catch (error: any) {
+      console.warn('Erro ao buscar perfis com subscriptions, tentando sem:', error)
+      // Tentar buscar sem subscriptions
+      try {
+        const result = await adminClient
+          .from('profiles')
+          .select('id, name')
+          .in('id', userIds)
+        
+        profilesRaw = result.data
+        profilesError = result.error
+      } catch (fallbackError: any) {
+        console.error('Erro ao buscar perfis:', fallbackError)
+        profilesError = fallbackError
+      }
+    }
 
     // Tratar erro do Supabase
     if (profilesError) {
       console.error('Supabase profiles error', profilesError)
       return NextResponse.json(
-        { error: "Erro ao buscar usuários: " + profilesError.message },
+        { error: "Erro ao buscar usuários: " + (profilesError.message || 'Erro desconhecido') },
         { status: 500 }
       )
     }
@@ -131,15 +155,15 @@ export async function POST(request: NextRequest) {
             id: profile.id,
             name: profile.name || null,
             email: authUser?.user?.email || null,
-            subscriptions: profile.subscriptions || [],
+            subscriptions: Array.isArray(profile.subscriptions) ? profile.subscriptions : [],
           } as UserBasic & { subscriptions?: any[] }
-        } catch (error) {
-          console.warn(`Erro ao buscar email para usuário ${profile.id}:`, error)
+        } catch (error: any) {
+          console.warn(`Erro ao buscar email para usuário ${profile.id}:`, error?.message || error)
           return {
             id: profile.id,
             name: profile.name || null,
             email: null,
-            subscriptions: profile.subscriptions || [],
+            subscriptions: Array.isArray(profile.subscriptions) ? profile.subscriptions : [],
           } as UserBasic & { subscriptions?: any[] }
         }
       })
@@ -279,8 +303,14 @@ export async function POST(request: NextRequest) {
           continue
         }
 
+        if (!user.email) {
+          results.failed++
+          results.errors.push(`Usuário ${user.name}: email não encontrado`)
+          continue
+        }
+
         const result = await sendEmail({
-          to: user.email!,
+          to: user.email,
           subject: emailSubject,
           html,
         })
@@ -293,7 +323,9 @@ export async function POST(request: NextRequest) {
         }
       } catch (error: any) {
         results.failed++
-        results.errors.push(`Usuário ${user.name}: ${error.message || 'Erro ao enviar email'}`)
+        const errorMsg = error?.message || error?.toString() || 'Erro ao enviar email'
+        results.errors.push(`Usuário ${user.name}: ${errorMsg}`)
+        console.error(`Erro ao enviar email para ${user.name} (${user.email}):`, error)
       }
     }
 

@@ -64,30 +64,38 @@ export async function POST(request: NextRequest) {
         model: stabilityModel,
         imageSize: buffer.length,
         fileName: imageFile.name,
-        fileType: imageFile.type
+        fileType: imageFile.type,
+        hasApiKey: !!process.env.STABILITY_API_KEY
       })
       
       imageUrl = await upscaleImage(buffer, stabilityModel)
       
-      console.log('✅ Upscale concluído com sucesso')
+      if (!imageUrl) {
+        throw new Error('A API retornou uma resposta vazia')
+      }
+      
+      console.log('✅ Upscale concluído com sucesso, tamanho da imagem:', imageUrl.length)
     } catch (error: any) {
       console.error('❌ Erro completo ao fazer upscale com Stability AI:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
+        message: error?.message || error?.toString(),
+        stack: error?.stack,
+        name: error?.name,
         error: error,
         model: stabilityModel,
-        imageSize: buffer.length
+        imageSize: buffer.length,
+        hasApiKey: !!process.env.STABILITY_API_KEY
       })
       
-      errorMessage = error.message || 'Erro desconhecido ao fazer upscale'
+      errorMessage = error?.message || error?.toString() || 'Erro desconhecido ao fazer upscale'
       
       // Verificar se é erro de API key
-      if (errorMessage.includes('STABILITY_API_KEY')) {
+      if (errorMessage.includes('STABILITY_API_KEY') || errorMessage.includes('não configurada')) {
         return NextResponse.json(
           { 
+            success: false,
             error: "STABILITY_API_KEY não configurada",
-            details: "Configure a variável STABILITY_API_KEY no .env.local"
+            details: "Configure a variável STABILITY_API_KEY no .env.local",
+            message: "Configure a chave da API para usar esta funcionalidade"
           },
           { status: 500 }
         )
@@ -96,9 +104,11 @@ export async function POST(request: NextRequest) {
       // Se falhar, retornar erro com mais detalhes
       return NextResponse.json(
         { 
+          success: false,
           error: "Erro ao fazer upscale da imagem",
           details: errorMessage,
-          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+          message: "Não foi possível fazer o upscale. Verifique se a API key está configurada corretamente.",
+          stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
         },
         { status: 500 }
       )

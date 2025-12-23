@@ -39,3 +39,5 @@ export type OfferBasic = {
 
 
 
+
+

@@ -36,11 +36,14 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(arrayBuffer)
 
     // Usar Remove.bg API
-    const removeBgApiKey = process.env.REMOVEBG_API_KEY || 'YJJtmqPiybM2pM1zcXAveJ4P'
+    const removeBgApiKey = process.env.REMOVEBG_API_KEY || process.env.REMOVE_BG_API_KEY || 'YJJtmqPiybM2pM1zcXAveJ4P'
     let imageUrl = null
+    let errorMessage = null
 
-    if (removeBgApiKey) {
+    if (removeBgApiKey && removeBgApiKey !== 'YJJtmqPiybM2pM1zcXAveJ4P') {
       try {
+        console.log('🔄 Tentando remover background com Remove.bg API...')
+        
         // Remove.bg requer multipart/form-data com o arquivo binário
         // No Node.js 18+, FormData funciona, mas precisamos criar corretamente
         const formDataRemoveBg = new FormData()
@@ -62,12 +65,19 @@ export async function POST(request: Request) {
           const resultBuffer = Buffer.from(removeBgData)
           const resultBase64 = resultBuffer.toString('base64')
           imageUrl = `data:image/png;base64,${resultBase64}`
+          console.log('✅ Background removido com sucesso')
         } else {
-          console.error('Erro ao remover background com Remove.bg:', await removeBgResponse.text())
+          const errorText = await removeBgResponse.text()
+          errorMessage = `Remove.bg API error: ${removeBgResponse.status} - ${errorText.substring(0, 200)}`
+          console.error('❌ Erro ao remover background com Remove.bg:', errorMessage)
         }
-      } catch (error) {
-        console.error('Erro ao chamar Remove.bg:', error)
+      } catch (error: any) {
+        errorMessage = error?.message || 'Erro ao chamar Remove.bg API'
+        console.error('❌ Erro ao chamar Remove.bg:', error)
       }
+    } else {
+      errorMessage = 'REMOVEBG_API_KEY não configurada'
+      console.warn('⚠️ REMOVEBG_API_KEY não configurada, usando imagem original')
     }
 
     // Se não tiver Remove.bg, retornar imagem original (ou implementar alternativa)
@@ -99,9 +109,14 @@ export async function POST(request: Request) {
     // }
 
     return NextResponse.json({
-      success: true,
+      success: !!imageUrl,
       imageUrl,
-      message: removeBgApiKey ? "Background removido com sucesso" : "Configure REMOVEBG_API_KEY para remover backgrounds"
+      message: errorMessage 
+        ? `Background não removido: ${errorMessage}. Retornando imagem original.` 
+        : (removeBgApiKey && removeBgApiKey !== 'YJJtmqPiybM2pM1zcXAveJ4P' 
+          ? "Background removido com sucesso" 
+          : "Configure REMOVEBG_API_KEY para remover backgrounds. Retornando imagem original."),
+      warning: errorMessage || undefined
     })
   } catch (error: any) {
     console.error('Error in background removal:', error)
