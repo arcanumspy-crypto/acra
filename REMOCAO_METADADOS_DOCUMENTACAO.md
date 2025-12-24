@@ -336,3 +336,5 @@ Para usar, acesse `/ferramentas/mascarar-criativo` e faça upload de uma imagem 
 
 
 
+
+

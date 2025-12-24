@@ -21,3 +21,5 @@ COMMENT ON COLUMN offers.image_url IS 'URL da imagem da oferta (armazenada no Su
 
 
 
+
+

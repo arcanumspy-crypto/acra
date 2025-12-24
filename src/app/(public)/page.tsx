@@ -26,8 +26,7 @@ import {
   Globe,
   Layers,
   PlayCircle,
-  Target,
-  Eye
+  Target
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
@@ -225,18 +224,6 @@ export default function HomePage() {
               Acesse milhares de ofertas escaladas, crie vozes IA, gere copy profissional e monitore criativos que estão dominando o mercado de resposta direta.
             </p>
             
-            {/* Explicação sobre Créditos */}
-            <div className="relative bg-[#ff5a1f]/10 dark:bg-[#ff5a1f]/20 border border-[#ff5a1f]/20 dark:border-[#ff5a1f]/30 rounded-xl p-6 max-w-[900px] mx-auto overflow-hidden">
-              <motion.div
-                className="absolute inset-0 opacity-40 bg-gradient-to-r from-transparent via-white/30 to-transparent dark:via-white/10"
-                animate={{ x: ["-100%", "100%"] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-              />
-              <p className="text-sm md:text-base text-[#0b0c10] dark:text-white font-medium">
-                💳 <strong>Sistema de Créditos:</strong> Use créditos para acessar ofertas, gerar vozes IA e criar copy profissional. Compre apenas o que você precisa, quando precisar.
-              </p>
-            </div>
-
             {/* Botões */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6 px-4 md:px-8 lg:px-12">
               <Link href="/signup">
@@ -256,20 +243,6 @@ export default function HomePage() {
                   >
                     Começar Agora – Grátis
                     <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </motion.div>
-              </Link>
-              <Link href="/pricing">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Button 
-                    size="lg" 
-                    variant="outline"
-                    className="border-2 border-[#0b0c10] dark:border-white text-[#0b0c10] dark:text-white hover:bg-[#0b0c10] dark:hover:bg-white hover:text-white dark:hover:text-[#0b0c10] rounded-full px-8 py-6 text-lg font-semibold transition-all"
-                  >
-                    Ver Créditos
                   </Button>
                 </motion.div>
               </Link>
@@ -547,82 +520,6 @@ export default function HomePage() {
         </div>
       </SectionReveal>
 
-      {/* Sistema de Créditos */}
-      <SectionReveal className="py-24 bg-white dark:bg-black">
-        <div className="container px-4 md:px-6">
-          <ScrollAnimation>
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold text-[#0b0c10] dark:text-white mb-4">
-                Sistema de Créditos
-              </h2>
-              <p className="text-lg text-[#6b6b6b] dark:text-gray-400 max-w-2xl mx-auto">
-                Use créditos para acessar todas as funcionalidades. Pague apenas pelo que usar.
-              </p>
-            </div>
-          </ScrollAnimation>
-
-          <div className="max-w-4xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-              {[
-                {
-                  icon: Eye,
-                  title: "Visualizar Ofertas",
-                  credits: "1 crédito",
-                  description: "Por cada oferta visualizada pela primeira vez"
-                },
-                {
-                  icon: Mic,
-                  title: "Gerar Voz IA",
-                  credits: "5 créditos/min",
-                  description: "Proporcional à duração do áudio gerado"
-                },
-                {
-                  icon: Copy,
-                  title: "Gerar Copy",
-                  credits: "5 créditos",
-                  description: "Por cada geração de copy profissional"
-                }
-              ].map((item, index) => (
-                <ScrollAnimation key={index} delay={index * 0.1}>
-                  <Card className="bg-white dark:bg-black border-2 border-gray-200 dark:border-gray-800 shadow-md hover:shadow-xl transition-all rounded-2xl p-6 text-center">
-                    <div className="w-16 h-16 rounded-xl bg-[#ff5a1f]/10 dark:bg-[#ff5a1f]/20 flex items-center justify-center mx-auto mb-4">
-                      <item.icon className="w-8 h-8 text-[#ff5a1f]" />
-                    </div>
-                    <h3 className="text-xl font-bold text-[#0b0c10] dark:text-white mb-2">
-                      {item.title}
-                    </h3>
-                    <div className="text-2xl font-bold text-[#ff5a1f] mb-2">
-                      {item.credits}
-                    </div>
-                    <p className="text-sm text-[#6b6b6b] dark:text-gray-400">
-                      {item.description}
-                    </p>
-                  </Card>
-                </ScrollAnimation>
-              ))}
-            </div>
-            
-            <div className="bg-[#ff5a1f]/10 dark:bg-[#ff5a1f]/20 border border-[#ff5a1f]/20 dark:border-[#ff5a1f]/30 rounded-2xl p-8 text-center">
-              <h3 className="text-2xl font-bold text-[#0b0c10] dark:text-white mb-4">
-                Como Funciona?
-              </h3>
-              <p className="text-lg text-[#6b6b6b] dark:text-gray-400 mb-6 max-w-2xl mx-auto">
-                Compre créditos quando precisar e use conforme sua necessidade. Não há mensalidades fixas - você paga apenas pelo que usar. Os créditos não expiram e você pode comprar mais a qualquer momento.
-              </p>
-              <Link href="/pricing">
-                <Button 
-                  size="lg"
-                  className="bg-[#ff5a1f] hover:bg-[#ff4d29] text-white rounded-full px-8 py-6 text-lg font-semibold"
-                >
-                  Ver Pacotes de Créditos
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </SectionReveal>
-
       {/* CTA Final */}
       <SectionReveal className="py-24 bg-white dark:bg-black" offset={40}>
         <div className="container px-4 md:px-6">
@@ -646,20 +543,6 @@ export default function HomePage() {
                     >
                       Começar Agora – Grátis
                       <ArrowRight className="ml-2 h-5 w-5" />
-                    </Button>
-                  </motion.div>
-                </Link>
-                <Link href="/pricing">
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Button 
-                      size="lg" 
-                      variant="outline"
-                      className="border-2 border-[#0b0c10] dark:border-white text-[#0b0c10] dark:text-white hover:bg-[#0b0c10] dark:hover:bg-white hover:text-white dark:hover:text-[#0b0c10] rounded-full px-8 py-6 text-lg font-semibold"
-                    >
-                      Ver Créditos
                     </Button>
                   </motion.div>
                 </Link>

@@ -66,3 +66,5 @@ CREATE POLICY "Users can delete their own tarefa_listas"
 
 
 
+
+

@@ -53,3 +53,5 @@ WHERE tablename = 'offers' AND policyname = 'Authenticated users can view active
 
 
 
+
+

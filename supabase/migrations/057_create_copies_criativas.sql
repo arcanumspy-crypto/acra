@@ -86,3 +86,5 @@ COMMENT ON COLUMN copies_criativas.creative_type IS 'Tipo de criativo (Criativo 
 
 
 
+
+
